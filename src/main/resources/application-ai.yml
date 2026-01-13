@@ -1,0 +1,9 @@
+spring:
+  ai:
+    vectorstore:
+      qdrant:
+        collection-name: vector_store
+        initialize-schema: true
+project:
+  conversation:
+    sign-key: your-secure-32+character-secret-key

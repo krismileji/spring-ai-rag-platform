@@ -1,0 +1,30 @@
+server:
+  port: 10001
+spring:
+  application:
+    name: ai-agent
+  profiles:
+    include:
+      - db
+      - redis
+      - authorization
+      - ai
+      - knife4j
+      - primary
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+      enabled: true
+  threads:
+    virtual:
+      enabled: true
+  main:
+    keep-alive: true
+logging:
+  level:
+    'cn.krismile.ai.agent': debug
+krismile:
+  web:
+    xss:
+      enabled: false

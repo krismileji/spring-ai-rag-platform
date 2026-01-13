@@ -1,0 +1,30 @@
+springdoc:
+  swagger-ui:
+    operations-sorter: order
+  group-configs:
+    - group: default
+      packages-to-scan:
+        - cn.krismile.ai.agent.controller
+    - group: 模型
+      packages-to-scan:
+        - cn.krismile.ai.agent.controller.model
+    - group: 聊天
+      packages-to-scan:
+        - cn.krismile.ai.agent.controller.chat
+knife4j:
+  # 是否开启Knife4j增强模式
+  enable: true
+  # 前端 Ui 的个性化配置属性
+  setting:
+    # Ui默认显示语言,目前主要有两种:中文(zh-CN)、英文(en-US)
+    language: zh_cn
+    # 是否在每个Debug调试栏后显示刷新变量按钮,默认不显示
+    enable-reload-cache-parameter: true
+    # 是否显示 Footer
+    enable-footer: true
+    # 是否开启自定义 Footer
+    enable-footer-custom: true
+    # 自定义Footer内容
+#    footer-custom-content:
+    # 是否开启动态参数调试功能
+    enable-dynamic-parameter: true
