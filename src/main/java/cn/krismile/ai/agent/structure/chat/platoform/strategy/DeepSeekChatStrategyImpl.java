@@ -1,8 +1,10 @@
 package cn.krismile.ai.agent.structure.chat.platoform.strategy;
 
 import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
-import cn.krismile.ai.agent.structure.chat.ChatPlatformStrategy;
+import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
+import cn.krismile.ai.agent.structure.chat.platoform.ChatPlatformStrategy;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 
 /**
  * 深度搜索聊天平台策略实现
@@ -20,4 +22,18 @@ public class DeepSeekChatStrategyImpl extends AbstractChatPlatformStrategy imple
         return ChatPlatformEnum.DEEPSEEK;
     }
 
+    @Override
+    protected Flux<ChatModelVO> queryModels() {
+        return Flux.just(
+                new ChatModelVO()
+                        .setPlatform(this.platform().getValue())
+                        .setPlatformName(this.platform().getReasonPhrase())
+                        .setModel("deepseek-chat")
+                        .setModelName("DeepSeek-V3.2（非思考模式）"),
+                new ChatModelVO()
+                        .setPlatform(this.platform().getValue())
+                        .setPlatformName(this.platform().getReasonPhrase())
+                        .setModel("deepseek-reasoner")
+                        .setModelName("DeepSeek-V3.2（思考模式）"));
+    }
 }

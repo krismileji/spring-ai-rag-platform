@@ -5,7 +5,7 @@ import cn.krismile.ai.agent.structure.chat.chatmodel.factory.PlatformModelBuilde
 import cn.krismile.ai.agent.structure.chat.chatmodel.factory.options.PlatformChatOptions;
 import cn.krismile.ai.agent.structure.chat.chatmodel.factory.options.PlatformEmbeddingOptions;
 import cn.krismile.ai.agent.structure.chat.model.ChatPlatformDTO;
-import cn.krismile.ai.agent.structure.chat.platoform.PlatformService;
+import cn.krismile.ai.agent.structure.chat.platoform.service.PlatformService;
 import cn.krismile.ai.agent.util.AESEncryptionUtil;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.embedding.EmbeddingModel;

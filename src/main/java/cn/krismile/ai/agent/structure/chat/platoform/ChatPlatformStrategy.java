@@ -1,7 +1,8 @@
-package cn.krismile.ai.agent.structure.chat;
+package cn.krismile.ai.agent.structure.chat.platoform;
 
 import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
 import cn.krismile.ai.agent.model.request.chat.ChatRequest;
+import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
 import cn.krismile.ai.agent.model.response.chat.ChatResponse;
 import reactor.core.publisher.Flux;
 
@@ -20,6 +21,16 @@ public interface ChatPlatformStrategy {
      * @since 1.0.0
      */
     ChatPlatformEnum platform();
+
+    /**
+     * 获取所有模型
+     *
+     * @return 模型列表
+     * @since 1.0.0
+     */
+    default Flux<ChatModelVO> listAllModels() {
+        return Flux.empty();
+    }
 
     /**
      * 聊天

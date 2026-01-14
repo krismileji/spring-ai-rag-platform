@@ -5,13 +5,16 @@ import cn.krismile.ai.agent.constant.Knowledge;
 import cn.krismile.ai.agent.context.RequestContext;
 import cn.krismile.ai.agent.model.request.chat.ChatOptionsRequest;
 import cn.krismile.ai.agent.model.request.chat.ChatRequest;
+import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
 import cn.krismile.ai.agent.model.response.chat.ChatResponse;
 import cn.krismile.ai.agent.structure.SchedulerDelegate;
-import cn.krismile.ai.agent.structure.chat.ChatPlatformStrategy;
-import cn.krismile.ai.agent.structure.chat.memory.MessageWindowChatMemory;
-import cn.krismile.ai.agent.structure.chat.memory.MysqlChatMemoryRepository;
 import cn.krismile.ai.agent.structure.chat.chatmodel.factory.ChatModelFactory;
 import cn.krismile.ai.agent.structure.chat.chatmodel.factory.options.PlatformChatOptions;
+import cn.krismile.ai.agent.structure.chat.memory.MessageWindowChatMemory;
+import cn.krismile.ai.agent.structure.chat.memory.MysqlChatMemoryRepository;
+import cn.krismile.ai.agent.structure.chat.platoform.ChatPlatformStrategy;
+import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.NonNull;
@@ -22,7 +25,9 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -40,6 +45,12 @@ public abstract class AbstractChatPlatformStrategy implements ChatPlatformStrate
     private ChatMemory chatMemory;
     @Resource
     private MysqlChatMemoryRepository mysqlChatMemoryRepository;
+
+    private final AsyncLoadingCache<String, List<ChatModelVO>> modelCache = Caffeine.newBuilder()
+            .maximumSize(1)
+            .buildAsync((key, executor) -> this.queryModels().collectList().toFuture());
+
+    protected abstract Flux<ChatModelVO> queryModels();
 
     protected ChatClient chatClient(ChatClient.Builder builder) {
         return builder.build();
@@ -74,6 +85,11 @@ public abstract class AbstractChatPlatformStrategy implements ChatPlatformStrate
                                 request.getConversationId(), finalReasoningContent.get());
                     }
                 });
+    }
+
+    @Override
+    public Flux<ChatModelVO> listAllModels() {
+        return Mono.fromFuture(modelCache.get("models")).flatMapMany(Flux::fromIterable);
     }
 
     protected ChatClient.Builder defaultChatClientBuilder(ChatRequest request) {

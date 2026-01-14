@@ -1,14 +1,17 @@
 package cn.krismile.ai.agent.controller.chat;
 
+import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
 import cn.krismile.ai.agent.model.request.chat.ChatPlatformEditRequest;
+import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
 import cn.krismile.ai.agent.model.response.chat.ChatPlatformVO;
-import cn.krismile.ai.agent.structure.chat.platoform.PlatformService;
+import cn.krismile.ai.agent.structure.chat.platoform.service.PlatformService;
 import host.springboot.framework3.core.response.R;
 import host.springboot.framework3.core.response.vo.VO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -31,6 +34,12 @@ public class ChatPlatformController {
     @GetMapping("/chat/list")
     public VO<List<ChatPlatformVO>> listPlatforms() {
         return R.data(this.platformService.listPlatforms());
+    }
+
+    @Operation(summary = "聊天模型列表")
+    @GetMapping("/model/chat/list")
+    public Flux<ChatModelVO> listModels(@RequestParam ChatPlatformEnum platform) {
+        return this.platformService.listModels(platform);
     }
 
     @Operation(summary = "编辑聊天平台")

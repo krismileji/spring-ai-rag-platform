@@ -20,7 +20,6 @@ import static cn.krismile.ai.agent.model.domain.table.SysDictDOTableDef.SYS_DICT
 @Service
 public class ChatModelServiceImpl implements ChatModelService {
 
-
     @Override
     public List<ChatModelVO> listChatModels(ChatModelRequest query) {
         List<SysDictDO> models = SysDictDO.create()

@@ -1,15 +1,17 @@
-package cn.krismile.ai.agent.structure.chat.platoform;
+package cn.krismile.ai.agent.structure.chat.platoform.service;
 
 import cn.krismile.ai.agent.model.domain.AiPlatformDO;
 import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
 import cn.krismile.ai.agent.model.request.chat.ChatOptionsRequest;
 import cn.krismile.ai.agent.model.request.chat.ChatPlatformEditRequest;
+import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
 import cn.krismile.ai.agent.model.response.chat.ChatPlatformVO;
 import cn.krismile.ai.agent.util.AESEncryptionUtil;
 import host.springboot.framework3.core.enumeration.error.ErrorCodeEnum;
 import host.springboot.framework3.core.exception.ApplicationException;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
 import java.util.Arrays;
 import java.util.List;
@@ -39,6 +41,11 @@ public class PlatformServiceImpl implements PlatformService {
                 .map(platform -> ChatPlatformVO.of(Optional.ofNullable(platform2Data.get(platform))
                         .orElseGet(() -> AiPlatformDO.create().setPlatform(platform))))
                 .toList();
+    }
+
+    @Override
+    public Flux<ChatModelVO> listModels(ChatPlatformEnum platform) {
+        return platform.strategy().listAllModels();
     }
 
     @Override

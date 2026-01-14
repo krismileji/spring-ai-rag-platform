@@ -1,7 +1,7 @@
 package cn.krismile.ai.agent.model.enumeration.chat;
 
 import cn.krismile.ai.agent.structure.chat.platoform.strategy.AliYunChatStrategyImpl;
-import cn.krismile.ai.agent.structure.chat.ChatPlatformStrategy;
+import cn.krismile.ai.agent.structure.chat.platoform.ChatPlatformStrategy;
 import cn.krismile.ai.agent.structure.chat.platoform.strategy.DeepSeekChatStrategyImpl;
 import cn.krismile.ai.agent.structure.chat.platoform.strategy.OllamaChatStrategyImpl;
 import host.springboot.framework3.core.enumeration.BaseEnum;

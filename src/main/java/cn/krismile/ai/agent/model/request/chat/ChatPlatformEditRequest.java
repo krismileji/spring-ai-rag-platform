@@ -21,7 +21,7 @@ public class ChatPlatformEditRequest {
     private ChatPlatformEnum platform;
 
     @Schema(description = "ApiKey")
-    @NotNull(message = "ApiKey不能为空")
+    @NotNull(message = "ApiKey 不能为空")
     private String apiKey;
 
     @Schema(description = "是否启用")
