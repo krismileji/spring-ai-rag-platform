@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 阿里云聊天平台策略实现
@@ -40,6 +41,7 @@ public class AliYunChatStrategyImpl extends AbstractChatPlatformStrategy impleme
 
     @Override
     protected Flux<ChatModelVO> queryModels() {
+        AtomicInteger modelIndex = new AtomicInteger(0);
         return webClientBuilder.baseUrl("https://bailian-cs.console.aliyun.com")
                 .build()
                 .post()
@@ -105,6 +107,7 @@ public class AliYunChatStrategyImpl extends AbstractChatPlatformStrategy impleme
                                 .setModel(model.get("model").asText())
                                 .setModelName(model.get("name").asText())
                                 .setDescription(model.get("description").asText())
+                                .setSort(modelIndex.getAndIncrement())
                         )))
                         .orElseGet(Flux::empty)
                 );

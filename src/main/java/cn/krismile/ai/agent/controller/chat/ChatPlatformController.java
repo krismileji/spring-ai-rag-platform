@@ -1,6 +1,7 @@
 package cn.krismile.ai.agent.controller.chat;
 
 import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
+import cn.krismile.ai.agent.model.request.chat.ChatModelEditRequest;
 import cn.krismile.ai.agent.model.request.chat.ChatPlatformEditRequest;
 import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
 import cn.krismile.ai.agent.model.response.chat.ChatPlatformVO;
@@ -11,7 +12,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -36,15 +37,21 @@ public class ChatPlatformController {
         return R.data(this.platformService.listPlatforms());
     }
 
-    @Operation(summary = "聊天模型列表")
-    @GetMapping("/model/chat/list")
-    public Flux<ChatModelVO> listModels(@RequestParam ChatPlatformEnum platform) {
-        return this.platformService.listModels(platform);
-    }
-
     @Operation(summary = "编辑聊天平台")
     @PutMapping("/chat/edit")
     public VO<Boolean> editPlatform(@RequestBody @Valid ChatPlatformEditRequest request) {
         return R.data(this.platformService.editPlatform(request));
+    }
+
+    @Operation(summary = "聊天模型列表")
+    @GetMapping("/model/chat/list")
+    public Mono<VO<List<ChatModelVO>>> listModels(@RequestParam ChatPlatformEnum platform) {
+        return this.platformService.listModels(platform).collectList().map(R::data);
+    }
+
+    @Operation(summary = "编辑聊天模型")
+    @PutMapping("/model/chat/edit")
+    public Mono<VO<Boolean>> editModel(@RequestBody @Valid ChatModelEditRequest request) {
+        return this.platformService.editModel(request).map(R::data);
     }
 }

@@ -12,8 +12,11 @@ import lombok.experimental.Accessors;
  */
 @Data
 @Accessors(chain = true)
-@Schema(description = "聊天模型VO")
+@Schema(description = "聊天模型 VO")
 public class ChatModelVO {
+
+    @Schema(description = "ID")
+    private Long id;
 
     @Schema(description = "平台")
     private String platform;
@@ -29,5 +32,8 @@ public class ChatModelVO {
 
     @Schema(description = "描述")
     private String description;
+
+    @Schema(description = "排序")
+    private Integer sort;
 
 }

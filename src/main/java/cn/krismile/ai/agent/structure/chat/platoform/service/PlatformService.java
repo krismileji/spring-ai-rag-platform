@@ -1,10 +1,12 @@
 package cn.krismile.ai.agent.structure.chat.platoform.service;
 
 import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
+import cn.krismile.ai.agent.model.request.chat.ChatModelEditRequest;
 import cn.krismile.ai.agent.model.request.chat.ChatPlatformEditRequest;
 import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
 import cn.krismile.ai.agent.model.response.chat.ChatPlatformVO;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -43,5 +45,14 @@ public interface PlatformService {
      * @since 1.0.0
      */
     Boolean editPlatform(ChatPlatformEditRequest request);
+
+    /**
+     * 编辑模型
+     *
+     * @param request 请求参数
+     * @return 是否编辑成功
+     * @since 1.0.0
+     */
+    Mono<Boolean> editModel(ChatModelEditRequest request);
 
 }

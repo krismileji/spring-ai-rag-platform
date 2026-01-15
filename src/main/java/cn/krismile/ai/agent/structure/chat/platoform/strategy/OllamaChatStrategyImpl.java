@@ -10,8 +10,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
- * Ollama聊天平台策略实现
+ * Ollama 聊天平台策略实现
  *
  * @author JiYinchuan
  * @since 1.0.0
@@ -33,6 +35,7 @@ public class OllamaChatStrategyImpl extends AbstractChatPlatformStrategy impleme
 
     @Override
     protected Flux<ChatModelVO> queryModels() {
+        AtomicInteger modelIndex = new AtomicInteger(0);
         return this.webClientBuilder.baseUrl(connectionDetails.getBaseUrl())
                 .build()
                 .get()
@@ -45,6 +48,8 @@ public class OllamaChatStrategyImpl extends AbstractChatPlatformStrategy impleme
                         .setPlatform(this.platform().getValue())
                         .setPlatformName(this.platform().getReasonPhrase())
                         .setModel(model.name())
-                        .setModelName(model.name()));
+                        .setModelName(model.name())
+                        .setSort(modelIndex.getAndIncrement())
+                );
     }
 }

@@ -49,6 +49,11 @@ public class AiModelDO extends BaseAssignDO<AiModelDO> {
     private Boolean enabled;
 
     /**
+     * 排序
+     */
+    private Integer sort;
+
+    /**
      * 关联平台 ID
      */
     private Long relPlatformId;
