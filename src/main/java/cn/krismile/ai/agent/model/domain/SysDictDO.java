@@ -1,13 +1,12 @@
 package cn.krismile.ai.agent.model.domain;
 
 import cn.krismile.ai.agent.model.enumeration.DictTypeEnum;
-import com.mybatisflex.annotation.Column;
-import com.mybatisflex.annotation.RelationOneToOne;
-import com.mybatisflex.annotation.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Table;
 
 /**
  * 系统字典表
@@ -15,12 +14,12 @@ import lombok.experimental.Accessors;
  * @author JiYinchuan
  * @since 1.0.0
  */
-@Data(staticConstructor = "create")
+@Data
 @Accessors(chain = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Table("sys_dict")
-public class SysDictDO extends BaseAssignDO<SysDictDO> {
+public class SysDictDO extends BaseIdDO {
 
     /**
      * 字典类型
@@ -55,8 +54,7 @@ public class SysDictDO extends BaseAssignDO<SysDictDO> {
     /**
      * 上级字典
      */
-    @Column(ignore = true)
-    @RelationOneToOne(selfField = "relParentId", targetField = "id")
+    @Transient
     private SysDictDO parent;
 
 }

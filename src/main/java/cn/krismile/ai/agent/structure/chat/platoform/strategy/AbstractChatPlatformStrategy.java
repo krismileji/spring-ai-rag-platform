@@ -1,9 +1,9 @@
 package cn.krismile.ai.agent.structure.chat.platoform.strategy;
 
-import cn.dev33.satoken.stp.StpUtil;
+import cn.krismile.ai.agent.configuration.security.context.SecurityUtils;
 import cn.krismile.ai.agent.constant.Knowledge;
-import cn.krismile.ai.agent.context.RequestContext;
 import cn.krismile.ai.agent.model.domain.AiModelDO;
+import cn.krismile.ai.agent.model.domain.AiPlatformDO;
 import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
 import cn.krismile.ai.agent.model.request.chat.ChatOptionsRequest;
 import cn.krismile.ai.agent.model.request.chat.ChatRequest;
@@ -11,7 +11,6 @@ import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
 import cn.krismile.ai.agent.model.response.chat.ChatResponse;
 import cn.krismile.ai.agent.repository.platform.AiModelRepository;
 import cn.krismile.ai.agent.repository.platform.AiPlatformRepository;
-import cn.krismile.ai.agent.structure.SchedulerDelegate;
 import cn.krismile.ai.agent.structure.chat.chatmodel.factory.ChatModelFactory;
 import cn.krismile.ai.agent.structure.chat.chatmodel.factory.options.PlatformChatOptions;
 import cn.krismile.ai.agent.structure.chat.memory.MessageWindowChatMemory;
@@ -26,9 +25,7 @@ import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.data.domain.Range;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
-import org.springframework.data.redis.core.ZSetOperations;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -37,8 +34,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static cn.krismile.ai.agent.model.domain.table.AiModelDOTableDef.AI_MODEL_DO;
 
 /**
  * 聊天平台策略抽象类
@@ -53,13 +48,13 @@ public abstract class AbstractChatPlatformStrategy implements ChatPlatformStrate
     @Resource
     private MysqlChatMemoryRepository mysqlChatMemoryRepository;
     @Resource
-    private ReactiveRedisTemplate<String, ChatModelVO> reactiveRedisTemplate;
+    private ReactiveRedisTemplate<String, ?> reactiveRedisTemplate;
     @Resource
     private AiPlatformRepository aiPlatformRepository;
     @Resource
     private AiModelRepository aiModelRepository;
 
-    private static final Function<ChatPlatformEnum, String> REDIS_MODEL_CACHE_KEY = platform ->
+    public static final Function<ChatPlatformEnum, String> REDIS_MODEL_CACHE_KEY = platform ->
             new StringJoiner(":")
                     .add("ai")
                     .add("platform")
@@ -67,10 +62,6 @@ public abstract class AbstractChatPlatformStrategy implements ChatPlatformStrate
                     .add("chat")
                     .add(platform.getValue())
                     .toString();
-
-    // private final AsyncLoadingCache<String, List<ChatModelVO>> modelCache = Caffeine.newBuilder()
-    //         .maximumSize(1)
-    //         .buildAsync((key, executor) -> this.queryModels().collectList().toFuture());
 
     protected abstract Flux<ChatModelVO> queryModels();
 
@@ -81,12 +72,14 @@ public abstract class AbstractChatPlatformStrategy implements ChatPlatformStrate
     @Override
     public Flux<ChatResponse> chat(ChatRequest request) {
         AtomicReference<String> finalReasoningContent = new AtomicReference<>("");
-        return this.chatClient(this.defaultChatClientBuilder(request))
-                .prompt()
-                .user(request.getMessage())
-                .options(request.getOptions().toChatOptions(request.getPlatform()))
-                .stream()
-                .chatResponse()
+        return this.defaultChatClientBuilder(request)
+                .flatMapMany(builder -> this.chatClient(builder)
+                        .prompt()
+                        .user(request.getMessage())
+                        .options(request.getOptions().toChatOptions(request.getPlatform()))
+                        .stream()
+                        .chatResponse()
+                        .subscribeOn(Schedulers.boundedElastic()))
                 .filter(Objects::nonNull)
                 .mapNotNull(response -> {
                     String text = response.getResult().getOutput().getText();
@@ -101,10 +94,11 @@ public abstract class AbstractChatPlatformStrategy implements ChatPlatformStrate
                     chatResponse.setReasoningContent(reasoningContent);
                     return chatResponse.valid() ? chatResponse : null;
                 })
+                .publishOn(Schedulers.boundedElastic())
                 .doOnComplete(() -> {
                     if (StringUtils.isNotBlank(finalReasoningContent.get())) {
                         this.mysqlChatMemoryRepository.updateReasoningContent(
-                                request.getConversationId(), finalReasoningContent.get());
+                                request.getConversationId(), finalReasoningContent.get()).subscribe();
                     }
                 });
     }
@@ -112,73 +106,86 @@ public abstract class AbstractChatPlatformStrategy implements ChatPlatformStrate
     @Override
     public Flux<ChatModelVO> listAllModels() {
         String cacheKey = REDIS_MODEL_CACHE_KEY.apply(this.platform());
-        return this.reactiveRedisTemplate.opsForZSet()
-                .range(cacheKey, Range.unbounded())
+        return this.reactiveRedisTemplate.<String, ChatModelVO>opsForHash()
+                .values(cacheKey)
                 .switchIfEmpty(Flux.defer(() -> this.queryModels()
-                        .publishOn(SchedulerDelegate.create(Schedulers.boundedElastic()))
                         .collectList()
-                        .flatMapMany(models -> {
-                            if (models.isEmpty()) return Flux.empty();
-
-                            // 持久化模型
-                            List<ChatModelVO> savedModels = this.persistentModel(models);
-
-                            // 缓存模型
-                            return this.cacheModel(cacheKey, savedModels).thenMany(Flux.fromIterable(savedModels));
+                        .flatMap(models -> {
+                            if (models.isEmpty()) return Mono.empty();
+                            return this.persistentModel(models).flatMap(savedModels ->
+                                    this.cacheModel(cacheKey, savedModels).thenReturn(savedModels));
                         })
-                ));
+                        .flatMapMany(Flux::fromIterable)
+                ))
+                .sort(Comparator.comparingInt(ChatModelVO::getSort));
     }
 
-    protected ChatClient.Builder defaultChatClientBuilder(ChatRequest request) {
-        Long loginId = RequestContext.syncApply(StpUtil::getLoginIdAsLong);
-        ChatClient.Builder builder = ChatClient.builder(this.createChatModel(request))
-                // .defaultAdvisors(this.vectorStoreChatMemoryAdvisorBuilder().build())
-                .defaultUser(promptUserSpec -> promptUserSpec
-                        .metadata(MessageWindowChatMemory.MODEL, request.getModel())
-                        .metadata(Knowledge.MetaData.USER_ID, loginId)
-                )
-                .defaultAdvisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, request.getConversationId()))
-                .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory)
-                        .scheduler(SchedulerDelegate.create(BaseAdvisor.DEFAULT_SCHEDULER))
-                        .build());
-        builder = this.handleVectorStore(builder, request);
-        return builder;
+    protected Mono<ChatClient.Builder> defaultChatClientBuilder(ChatRequest request) {
+        return SecurityUtils.getUserId()
+                .onErrorResume(e -> Mono.just(-1L))
+                .flatMap(loginId -> this.createChatModel(request).flatMap(chatModel -> {
+                    ChatClient.Builder builder = ChatClient.builder(chatModel)
+                            .defaultUser(promptUserSpec -> promptUserSpec
+                                    .metadata(MessageWindowChatMemory.MODEL, request.getModel())
+                                    .metadata(Knowledge.MetaData.USER_ID, loginId)
+                            )
+                            .defaultAdvisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, request.getConversationId()))
+                            .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory)
+                                    .scheduler(BaseAdvisor.DEFAULT_SCHEDULER)
+                                    .build());
+                    return this.handleVectorStore(builder, request);
+                }));
     }
 
-    private List<ChatModelVO> persistentModel(List<ChatModelVO> models) {
-        if (models.isEmpty()) return List.of();
-        Long platformId = this.aiPlatformRepository.getOrInitIfNull(this.platform()).getId();
-        List<String> codes = models.stream().map(ChatModelVO::getModel).toList();
-        Set<String> existingCodes = AiModelDO.create()
-                .select(AI_MODEL_DO.CODE)
-                .where(AI_MODEL_DO.REL_PLATFORM_ID.in(platformId).and(AI_MODEL_DO.CODE.in(codes)))
-                .list().stream()
-                .map(AiModelDO::getCode)
-                .collect(Collectors.toSet());
-        List<AiModelDO> addModels = models.stream()
-                .filter(model -> !existingCodes.contains(model.getModel()))
-                .map(model -> AiModelDO.create()
-                        .setCode(model.getModel())
-                        .setName(model.getModelName())
-                        .setDescription(model.getDescription())
-                        .setEnabled(true)
-                        .setSort(model.getSort())
-                        .setRelPlatformId(platformId))
-                .toList();
-        if (!addModels.isEmpty()) {
-            this.aiModelRepository.saveBatch(addModels);
-            Map<String, ChatModelVO> model2Vo = models.stream().collect(Collectors.toMap(
-                    ChatModelVO::getModel, Function.identity()));
-            addModels.forEach(model -> model2Vo.get(model.getCode()).setId(model.getId()));
-        }
-        return models;
+    private Mono<List<ChatModelVO>> persistentModel(List<ChatModelVO> models) {
+        if (models.isEmpty()) return Mono.just(List.of());
+
+        return aiPlatformRepository.findByPlatform(this.platform())
+                .switchIfEmpty(Mono.defer(() -> {
+                    AiPlatformDO platform = new AiPlatformDO();
+                    platform.setPlatform(this.platform());
+                    return aiPlatformRepository.save(platform);
+                }))
+                .flatMap(platform -> {
+                    Long platformId = platform.getId();
+                    List<String> codes = models.stream().map(ChatModelVO::getModel).toList();
+
+                    return aiModelRepository.findByRelPlatformIdAndCodeIn(platformId, codes)
+                            .collectMap(AiModelDO::getCode, Function.identity())
+                            .flatMap(modelMap -> {
+                                List<AiModelDO> addModels = models.stream()
+                                        .filter(model -> !modelMap.containsKey(model.getModel()))
+                                        .map(model -> {
+                                            AiModelDO m = new AiModelDO();
+                                            m.setCode(model.getModel());
+                                            m.setName(model.getModelName());
+                                            m.setDescription(model.getDescription());
+                                            m.setEnabled(true);
+                                            m.setSort(model.getSort());
+                                            m.setRelPlatformId(platformId);
+                                            return m;
+                                        })
+                                        .toList();
+
+                                Mono<List<AiModelDO>> saveMono = addModels.isEmpty() ?
+                                        Mono.just(Collections.emptyList()) :
+                                        aiModelRepository.saveAll(addModels).collectList();
+
+                                return saveMono.map(savedList -> {
+                                    Map<String, Long> codeToIdMap = new HashMap<>();
+                                    modelMap.forEach((code, doObj) -> codeToIdMap.put(code, doObj.getId()));
+                                    savedList.forEach(doObj -> codeToIdMap.put(doObj.getCode(), doObj.getId()));
+                                    models.forEach(model -> model.setId(codeToIdMap.get(model.getModel())));
+                                    return models;
+                                });
+                            });
+                });
     }
 
-    private Mono<Long> cacheModel(String cacheKey, List<ChatModelVO> models) {
-        return this.reactiveRedisTemplate.opsForZSet()
-                .addAll(cacheKey, models.stream()
-                        .map(vo -> ZSetOperations.TypedTuple.of(vo, vo.getSort().doubleValue()))
-                        .toList());
+    private Mono<Boolean> cacheModel(String cacheKey, List<ChatModelVO> models) {
+        return this.reactiveRedisTemplate.opsForHash()
+                .putAll(cacheKey, models.stream().collect(Collectors.toMap(
+                        ChatModelVO::getModel, Function.identity())));
     }
 
     private String parseReasoningContent(AbstractMessage message) {
@@ -192,7 +199,7 @@ public abstract class AbstractChatPlatformStrategy implements ChatPlatformStrate
         return null;
     }
 
-    private ChatModel createChatModel(ChatRequest request) {
+    private Mono<ChatModel> createChatModel(ChatRequest request) {
         String model = request.getModel();
         ChatOptionsRequest options = Optional.ofNullable(request.getOptions()).orElseGet(ChatOptionsRequest::new);
         return ChatModelFactory.builder(this.platform()).chat(model, PlatformChatOptions.builder()
@@ -200,12 +207,13 @@ public abstract class AbstractChatPlatformStrategy implements ChatPlatformStrate
                 .enableThinking(options.getEnableThinking()));
     }
 
-    private ChatClient.Builder handleVectorStore(
+    private Mono<ChatClient.Builder> handleVectorStore(
             ChatClient.@NonNull Builder builder,
             @NonNull ChatRequest request) {
         if (request.getKnowledgeType() == null) {
-            return builder;
+            return Mono.just(builder);
         }
-        return builder.defaultAdvisors(request.getKnowledgeType().knowledgeStrategy().chatMemoryAdvisor());
+        return request.getKnowledgeType().knowledgeStrategy().chatMemoryAdvisor()
+                .map(builder::defaultAdvisors);
     }
 }

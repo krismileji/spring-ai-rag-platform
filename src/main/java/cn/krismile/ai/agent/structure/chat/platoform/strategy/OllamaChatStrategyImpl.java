@@ -49,6 +49,7 @@ public class OllamaChatStrategyImpl extends AbstractChatPlatformStrategy impleme
                         .setPlatformName(this.platform().getReasonPhrase())
                         .setModel(model.name())
                         .setModelName(model.name())
+                        .setEnabled(true)
                         .setSort(modelIndex.getAndIncrement())
                 );
     }

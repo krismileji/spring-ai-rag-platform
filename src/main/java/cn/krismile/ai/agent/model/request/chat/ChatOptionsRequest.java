@@ -1,6 +1,7 @@
 package cn.krismile.ai.agent.model.request.chat;
 
 import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
+import cn.krismile.ai.agent.model.interfaces.JsonType;
 import cn.krismile.ai.agent.structure.chat.chatmodel.factory.options.PlatformChatOptions;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -14,7 +15,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  */
 @Data
 @Schema(description = "聊天模型配置选项VO")
-public class ChatOptionsRequest {
+public class ChatOptionsRequest implements JsonType {
 
     @Schema(description = "请求超时时间，单位为秒")
     private Integer timeout;

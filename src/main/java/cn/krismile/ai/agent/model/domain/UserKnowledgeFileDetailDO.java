@@ -1,14 +1,12 @@
 package cn.krismile.ai.agent.model.domain;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.mybatisflex.annotation.Column;
-import com.mybatisflex.annotation.Table;
-import com.mybatisflex.core.handler.JacksonTypeHandler;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.springframework.ai.document.Document;
+import org.springframework.data.relational.core.mapping.Table;
 
 /**
  * 用户-知识库文件详情表
@@ -16,12 +14,12 @@ import org.springframework.ai.document.Document;
  * @author JiYinchuan
  * @since 1.0.0
  */
-@Data(staticConstructor = "create")
+@Data
 @Accessors(chain = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Table("user_knowledge_file_detail")
-public class UserKnowledgeFileDetailDO extends BaseAssignDO<UserKnowledgeFileDetailDO> {
+public class UserKnowledgeFileDetailDO extends BaseIdDO {
 
     /**
      * 文档 ID
@@ -36,7 +34,6 @@ public class UserKnowledgeFileDetailDO extends BaseAssignDO<UserKnowledgeFileDet
     /**
      * 元数据
      */
-    @Column(typeHandler = JacksonTypeHandler.class)
     private ObjectNode metaData;
 
     /**
@@ -44,16 +41,6 @@ public class UserKnowledgeFileDetailDO extends BaseAssignDO<UserKnowledgeFileDet
      */
     private Long relFileId;
 
-    /**
-     * 逻辑删除
-     */
-    private Boolean delFlag;
-
-    /**
-     * 转换为 Document
-     *
-     * @return Document
-     */
     public Document toDocument() {
         Document.Builder builder = Document.builder()
                 .id(this.documentId)

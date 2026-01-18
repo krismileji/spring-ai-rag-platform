@@ -1,13 +1,19 @@
 package cn.krismile.ai.agent.repository.chat;
 
 import cn.krismile.ai.agent.model.domain.UserChatConversationDO;
-import com.mybatisflex.core.service.IService;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
 
 /**
- * 用户聊天会话服务
+ * UserChatConversationRepository
  *
  * @author JiYinchuan
  * @since 1.0.0
  */
-public interface UserChatConversationRepository extends IService<UserChatConversationDO> {
+@Repository
+public interface UserChatConversationRepository extends R2dbcRepository<UserChatConversationDO, String> {
+
+    Flux<UserChatConversationDO> findByRelUserId(Long relUserId);
+
 }

@@ -1,15 +1,12 @@
 package cn.krismile.ai.agent.structure.chat.chatmodel;
 
-import cn.krismile.ai.agent.model.domain.SysDictDO;
-import cn.krismile.ai.agent.model.enumeration.DictTypeEnum;
 import cn.krismile.ai.agent.model.request.model.ChatModelRequest;
 import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
-import org.apache.commons.collections4.CollectionUtils;
+import cn.krismile.ai.agent.repository.platform.AiPlatformRepository;
+import jakarta.annotation.Resource;
+import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-
-import static cn.krismile.ai.agent.model.domain.table.SysDictDOTableDef.SYS_DICT_DO;
+import reactor.core.publisher.Flux;
 
 /**
  * 模型服务实现类
@@ -20,24 +17,13 @@ import static cn.krismile.ai.agent.model.domain.table.SysDictDOTableDef.SYS_DICT
 @Service
 public class ChatModelServiceImpl implements ChatModelService {
 
+    @Resource
+    private AiPlatformRepository aiPlatformRepository;
+
     @Override
-    public List<ChatModelVO> listChatModels(ChatModelRequest query) {
-        List<SysDictDO> models = SysDictDO.create()
-                .where(SYS_DICT_DO.TYPE.eq(DictTypeEnum.CHAT_MODEL))
-                .withRelations()
-                .list();
-        if (CollectionUtils.isEmpty(models)) {
-            return List.of();
-        }
-        return models.stream()
-                .map(model -> {
-                    SysDictDO parent = model.getParent();
-                    return new ChatModelVO()
-                            .setPlatform(parent.getValue())
-                            .setPlatformName(parent.getName())
-                            .setModel(model.getValue())
-                            .setModelName(model.getName());
-                })
-                .toList();
+    public Flux<ChatModelVO> listChatModels(ChatModelRequest query) {
+        return aiPlatformRepository.findByEnabled(true)
+                .flatMap(platform -> platform.getPlatform().strategy().listAllModels())
+                .filter(model -> BooleanUtils.isTrue(model.getEnabled()));
     }
 }

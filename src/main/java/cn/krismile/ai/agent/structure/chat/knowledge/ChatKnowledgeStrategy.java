@@ -3,6 +3,8 @@ package cn.krismile.ai.agent.structure.chat.knowledge;
 import cn.krismile.ai.agent.model.enumeration.chat.ChatKnowledgeTypeEnum;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 
+import reactor.core.publisher.Mono;
+
 /**
  * 聊天知识库策略
  *
@@ -25,6 +27,6 @@ public interface ChatKnowledgeStrategy {
      * @return 知识库内存顾问
      * @since 1.0.0
      */
-    BaseAdvisor chatMemoryAdvisor();
+    Mono<BaseAdvisor> chatMemoryAdvisor();
 
 }

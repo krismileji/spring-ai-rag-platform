@@ -6,6 +6,7 @@ import host.springboot.framework3.core.response.vo.VO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 /**
  * 会话
@@ -24,15 +25,28 @@ public class ConversationController {
         this.conversationIdGenerator = conversationIdGenerator;
     }
 
+    /**
+     * 生成会话ID
+     *
+     * @return 会话ID
+     * @since 1.0.0
+     */
     @Operation(summary = "生成会话 ID")
     @PostMapping("/generate")
-    public VO<String> generate() {
-        return R.data(conversationIdGenerator.generate());
+    public Mono<VO<String>> generate() {
+        return Mono.fromSupplier(conversationIdGenerator::generate).map(R::data);
     }
 
+    /**
+     * 验证会话ID
+     *
+     * @param conversationId 会话ID
+     * @return 验证结果
+     * @since 1.0.0
+     */
     @Operation(summary = "验证会话 ID")
     @PutMapping("/verify")
-    public VO<Boolean> verify(@RequestBody String conversationId) {
-        return R.data(conversationIdGenerator.verify(conversationId));
+    public Mono<VO<Boolean>> verify(@RequestBody String conversationId) {
+        return Mono.fromSupplier(() -> conversationIdGenerator.verify(conversationId)).map(R::data);
     }
 }

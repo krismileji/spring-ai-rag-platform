@@ -1,24 +1,25 @@
 package cn.krismile.ai.agent.structure.chat.memory;
 
-import cn.dev33.satoken.stp.StpUtil;
-import cn.krismile.ai.agent.context.RequestContext;
+import cn.krismile.ai.agent.configuration.security.context.SecurityUtils;
+import cn.krismile.ai.agent.model.domain.BaseDO;
 import cn.krismile.ai.agent.model.domain.UserChatConversationDO;
 import cn.krismile.ai.agent.model.domain.UserChatMemoryDO;
-import cn.krismile.ai.agent.model.enumeration.chat.ChatModelEnum;
-import com.mybatisflex.core.query.QueryMethods;
-import host.springboot.framework3.core.enumeration.BaseEnum;
+import cn.krismile.ai.agent.repository.chat.UserChatConversationRepository;
+import cn.krismile.ai.agent.repository.chat.UserChatMemoryRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.jspecify.annotations.NonNull;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.*;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.reactive.TransactionalOperator;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-
-import static cn.krismile.ai.agent.model.domain.table.UserChatConversationDOTableDef.USER_CHAT_CONVERSATION_DO;
-import static cn.krismile.ai.agent.model.domain.table.UserChatMemoryDOTableDef.USER_CHAT_MEMORY_DO;
 
 /**
  * Mysql 聊天记录存储
@@ -26,81 +27,121 @@ import static cn.krismile.ai.agent.model.domain.table.UserChatMemoryDOTableDef.U
  * @author JiYinchuan
  * @since 1.0.0
  */
+@Slf4j
+@RequiredArgsConstructor
 public class MysqlChatMemoryRepository implements ChatMemoryRepository {
+
+    private final UserChatConversationRepository userChatConversationRepository;
+    private final UserChatMemoryRepository userChatMemoryRepository;
+    private final TransactionalOperator transactionalOperator;
 
     private static final int MAX_MESSAGES = 30;
 
-    public void updateReasoningContent(@NonNull String conversationId, @NonNull String reasoningContent) {
-        Long userId = RequestContext.syncApply(() -> StpUtil.isLogin() ? StpUtil.getLoginIdAsLong() : null);
-        UserChatMemoryDO.create()
-                .select(USER_CHAT_MEMORY_DO.ID)
-                .where(USER_CHAT_MEMORY_DO.REL_CONVERSATION_ID.eq(conversationId)
-                        .and(USER_CHAT_MEMORY_DO.TYPE.eq(MessageType.ASSISTANT))
-                        .and(USER_CHAT_MEMORY_DO.REL_USER_ID.eq(userId)))
-                .orderBy(USER_CHAT_MEMORY_DO.CREATE_TIME.desc())
-                .limit(1)
-                .oneOpt().ifPresent(chatMemory -> {
-                    UserChatMemoryDO.create()
-                            .where(USER_CHAT_MEMORY_DO.ID.eq(chatMemory.getId()))
-                            .setReasoningContent(reasoningContent).update();
-                });
+    public Mono<Void> updateReasoningContent(@NonNull String conversationId, @NonNull String reasoningContent) {
+        Long userId;
+        try {
+            userId = SecurityUtils.getCurrentUserId();
+        } catch (Exception e) {
+            return Mono.empty();
+        }
+
+        return userChatMemoryRepository.findByRelConversationIdAndRelUserId(conversationId, userId)
+                .filter(m -> m.getType() == MessageType.ASSISTANT)
+                .sort((m1, m2) -> m2.getCreateTime().compareTo(m1.getCreateTime()))
+                .flatMap(chatMemory -> {
+                    chatMemory.setReasoningContent(reasoningContent);
+                    return userChatMemoryRepository.save(chatMemory);
+                })
+                .then();
     }
 
     @Override
     public @NonNull List<String> findConversationIds() {
-        if (!RequestContext.syncApply(StpUtil::isLogin)) {
+        Long userId;
+        try {
+            userId = SecurityUtils.getCurrentUserId();
+        } catch (Exception e) {
             return List.of();
         }
-        return UserChatMemoryDO.create()
-                .select(QueryMethods.distinct(USER_CHAT_MEMORY_DO.REL_CONVERSATION_ID))
-                .list().stream()
-                .map(UserChatMemoryDO::getRelConversationId)
-                .toList();
+
+        return userChatMemoryRepository.findDistinctRelConversationIdByRelUserId(userId)
+                .collectList()
+                .blockOptional()
+                .orElse(List.of());
     }
 
     @Override
     public @NonNull List<Message> findByConversationId(@NonNull String conversationId) {
-        return UserChatMemoryDO.create()
-                .where(USER_CHAT_MEMORY_DO.REL_CONVERSATION_ID.eq(conversationId))
-                .orderBy(USER_CHAT_MEMORY_DO.CREATE_TIME.desc())
-                .limit(MAX_MESSAGES)
-                .list().stream()
-                .map(item -> switch (item.getType()) {
+        Long userId;
+        try {
+            userId = SecurityUtils.getCurrentUserId();
+        } catch (Exception e) {
+            return List.of();
+        }
+
+        return userChatMemoryRepository.findByRelConversationIdAndRelUserId(conversationId, userId)
+                .sort(Comparator.comparing(BaseDO::getCreateTime))
+                .take(MAX_MESSAGES)
+                .map(item -> (Message) switch (item.getType()) {
                     case USER -> new UserMessage(item.getContent());
                     case ASSISTANT -> new AssistantMessage(item.getContent());
                     case SYSTEM -> new SystemMessage(item.getContent());
                     case TOOL -> ToolResponseMessage.builder().responses(List.of()).build();
                 })
-                .collect(Collectors.toList());
+                .collectList()
+                .blockOptional()
+                .orElse(List.of());
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void saveAll(@NonNull String conversationId, @NonNull List<Message> messages) {
-        Long userId = RequestContext.syncApply(() -> StpUtil.isLogin() ? StpUtil.getLoginIdAsLong() : null);
-        if (!UserChatConversationDO.create().where(USER_CHAT_CONVERSATION_DO.ID.eq(conversationId)).exists()) {
-            UserChatConversationDO.create()
-                    .setId(conversationId)
-                    .setContent(messages.getFirst().getText())
-                    .setRelUserId(userId)
-                    .save();
+        Long userId;
+        try {
+            userId = SecurityUtils.getCurrentUserId();
+        } catch (Exception e) {
+            return;
         }
-        UserChatMemoryDO.create().baseMapper().insertBatch(messages.stream()
-                .map(message -> UserChatMemoryDO.create()
-                        .setModel(this.parseModel(message))
-                        .setContent(message.getText())
-                        .setType(message.getMessageType())
-                        .setRelConversationId(conversationId)
-                        .setRelUserId(userId))
-                .toList());
+
+        userChatConversationRepository.existsById(conversationId)
+                .flatMap(exists -> {
+                    if (BooleanUtils.isNotTrue(exists)) {
+                        UserChatConversationDO conversation = new UserChatConversationDO();
+                        conversation.setId(conversationId);
+                        conversation.setContent(messages.getFirst().getText());
+                        conversation.setRelUserId(userId);
+                        conversation.setNew(true);
+                        return userChatConversationRepository.save(conversation).then();
+                    }
+                    return Mono.empty();
+                })
+                .then(Mono.defer(() -> {
+                    List<UserChatMemoryDO> memoryDOs = messages.stream()
+                            .map(message -> {
+                                UserChatMemoryDO memory = new UserChatMemoryDO();
+                                memory.setModel(this.parseModel(message));
+                                memory.setContent(message.getText());
+                                memory.setType(message.getMessageType());
+                                memory.setRelConversationId(conversationId);
+                                memory.setRelUserId(userId);
+                                return memory;
+                            })
+                            .toList();
+                    return userChatMemoryRepository.saveAll(memoryDOs).collectList().then();
+                }))
+                .as(transactionalOperator::transactional)
+                .subscribeOn(Schedulers.boundedElastic())
+                .subscribe();
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void deleteByConversationId(@NonNull String conversationId) {
-        UserChatConversationDO.create().where(USER_CHAT_CONVERSATION_DO.ID.eq(conversationId)).remove();
-        UserChatMemoryDO.create().where(USER_CHAT_MEMORY_DO.ID.eq(conversationId)).remove();
+        userChatConversationRepository.deleteById(conversationId)
+                .then(userChatMemoryRepository.deleteByRelConversationId(conversationId))
+                .as(transactionalOperator::transactional)
+                .subscribeOn(Schedulers.boundedElastic())
+                .subscribe();
     }
+
 
     private String parseModel(Message message) {
         Map<String, Object> metadata = message.getMetadata();

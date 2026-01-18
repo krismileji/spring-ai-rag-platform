@@ -5,6 +5,7 @@ import cn.krismile.ai.agent.structure.chat.chatmodel.factory.options.PlatformEmb
 import cn.krismile.ai.agent.structure.chat.chatmodel.factory.options.PlatformChatOptions;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.embedding.EmbeddingModel;
+import reactor.core.publisher.Mono;
 
 /**
  * 各平台模型构建器顶层接口
@@ -25,7 +26,7 @@ public interface PlatformModelBuilder {
      * @return 模型
      * @since 1.0.0
      */
-    ChatModel chat(String model, PlatformChatOptions.Builder builder);
+    Mono<ChatModel> chat(String model, PlatformChatOptions.Builder builder);
 
     /**
      * 创建嵌入模型
@@ -35,7 +36,7 @@ public interface PlatformModelBuilder {
      * @return 嵌入模型
      * @since 1.0.0
      */
-    default EmbeddingModel embedding(String model, PlatformEmbeddingOptions.Builder builder) {
+    default Mono<EmbeddingModel> embedding(String model, PlatformEmbeddingOptions.Builder builder) {
         throw new UnsupportedOperationException(this.platform().getValue() + " not supported expander caht model");
     }
 
@@ -45,7 +46,7 @@ public interface PlatformModelBuilder {
      * @return 聊天模型
      * @since 1.0.0
      */
-    default ChatModel expander() {
+    default Mono<ChatModel> expander() {
         throw new UnsupportedOperationException(this.platform().getValue() + " not supported expander caht model");
     }
 }

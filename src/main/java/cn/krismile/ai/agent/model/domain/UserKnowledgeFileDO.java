@@ -1,11 +1,11 @@
 package cn.krismile.ai.agent.model.domain;
 
 import cn.krismile.ai.agent.model.enumeration.UserKnowledgeFileStatusEnum;
-import com.mybatisflex.annotation.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
+import org.springframework.data.relational.core.mapping.Table;
 
 /**
  * 用户-知识库文件表
@@ -13,12 +13,12 @@ import lombok.experimental.Accessors;
  * @author JiYinchuan
  * @since 1.0.0
  */
-@Data(staticConstructor = "create")
+@Data
 @Accessors(chain = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Table("user_knowledge_file")
-public class UserKnowledgeFileDO extends BaseAssignDO<UserKnowledgeFileDO> {
+public class UserKnowledgeFileDO extends BaseIdDO {
 
     /**
      * 文件名
@@ -45,19 +45,4 @@ public class UserKnowledgeFileDO extends BaseAssignDO<UserKnowledgeFileDO> {
      */
     private Long relKnowledgeId;
 
-    /**
-     * 逻辑删除
-     */
-    private Boolean delFlag;
-
-    // public static List<UserKnowledgeFileDO> toAdd(List<Document> documents) {
-    //     return documents.stream()
-    //             .map(document -> UserKnowledgeFileDO.create()
-    //                     .setFileName(document.getMetadata().get("fileName"))
-    //                     .setPath(document.getMetadata().get("path"))
-    //                     .setRelUserId(document.getMetadata().get("relUserId"))
-    //                     .setRelKnowledgeId(document.getMetadata().get("relKnowledgeId"))
-    //                     .setDelFlag(false))
-    //             .toList();
-    // }
 }

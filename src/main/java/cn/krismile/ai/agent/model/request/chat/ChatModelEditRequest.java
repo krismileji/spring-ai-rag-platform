@@ -2,6 +2,7 @@ package cn.krismile.ai.agent.model.request.chat;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 import javax.validation.constraints.NotNull;
 
@@ -12,6 +13,7 @@ import javax.validation.constraints.NotNull;
  * @since 1.0.0
  */
 @Data
+@Accessors(chain = true)
 @Schema(description = "聊天平台模型编辑请求")
 public class ChatModelEditRequest {
 

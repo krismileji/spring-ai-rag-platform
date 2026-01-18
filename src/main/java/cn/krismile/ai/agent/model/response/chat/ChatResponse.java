@@ -2,7 +2,6 @@ package cn.krismile.ai.agent.model.response.chat;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.experimental.FieldNameConstants;
 import org.apache.commons.lang3.StringUtils;
 
@@ -14,7 +13,6 @@ import org.apache.commons.lang3.StringUtils;
  */
 @Data
 @FieldNameConstants
-@Accessors(chain = true)
 public class ChatResponse {
 
     /**

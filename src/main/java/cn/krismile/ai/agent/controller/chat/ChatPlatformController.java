@@ -1,6 +1,5 @@
 package cn.krismile.ai.agent.controller.chat;
 
-import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
 import cn.krismile.ai.agent.model.request.chat.ChatModelEditRequest;
 import cn.krismile.ai.agent.model.request.chat.ChatPlatformEditRequest;
 import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
@@ -31,24 +30,50 @@ public class ChatPlatformController {
     @Resource
     private PlatformService platformService;
 
+    /**
+     * 查询聊天平台列表
+     *
+     * @return 聊天平台列表
+     * @since 1.0.0
+     */
     @Operation(summary = "聊天平台列表")
     @GetMapping("/chat/list")
-    public VO<List<ChatPlatformVO>> listPlatforms() {
-        return R.data(this.platformService.listPlatforms());
+    public Mono<VO<List<ChatPlatformVO>>> listPlatforms() {
+        return this.platformService.listPlatforms().map(R::data);
     }
 
+    /**
+     * 编辑聊天平台
+     *
+     * @param request 编辑请求参数
+     * @return 是否编辑成功
+     * @since 1.0.0
+     */
     @Operation(summary = "编辑聊天平台")
     @PutMapping("/chat/edit")
-    public VO<Boolean> editPlatform(@RequestBody @Valid ChatPlatformEditRequest request) {
-        return R.data(this.platformService.editPlatform(request));
+    public Mono<VO<Boolean>> editPlatform(@RequestBody @Valid ChatPlatformEditRequest request) {
+        return this.platformService.editPlatform(request).map(R::data);
     }
 
+    /**
+     * 查询聊天模型列表
+     *
+     * @return 聊天模型列表
+     * @since 1.0.0
+     */
     @Operation(summary = "聊天模型列表")
     @GetMapping("/model/chat/list")
-    public Mono<VO<List<ChatModelVO>>> listModels(@RequestParam ChatPlatformEnum platform) {
-        return this.platformService.listModels(platform).collectList().map(R::data);
+    public Mono<VO<List<ChatModelVO>>> listModels() {
+        return this.platformService.listModels().collectList().map(R::data);
     }
 
+    /**
+     * 编辑聊天模型
+     *
+     * @param request 编辑请求参数
+     * @return 是否编辑成功
+     * @since 1.0.0
+     */
     @Operation(summary = "编辑聊天模型")
     @PutMapping("/model/chat/edit")
     public Mono<VO<Boolean>> editModel(@RequestBody @Valid ChatModelEditRequest request) {

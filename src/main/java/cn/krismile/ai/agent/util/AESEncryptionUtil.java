@@ -20,6 +20,7 @@ import java.util.Base64;
 public class AESEncryptionUtil {
 
     private static final String ALGORITHM = "AES";
+    private static final String HASH_ALGORITHM = "SHA-256";
     private static final int AES_KEY_SIZE = 32; // 256位密钥
 
     /**
@@ -33,7 +34,7 @@ public class AESEncryptionUtil {
     private static byte[] normalizeKey(String key) {
         try {
             byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
-            MessageDigest sha = MessageDigest.getInstance("SHA-256");
+            MessageDigest sha = MessageDigest.getInstance(HASH_ALGORITHM);
             keyBytes = sha.digest(keyBytes);
             return Arrays.copyOf(keyBytes, AES_KEY_SIZE);
         } catch (Exception e) {

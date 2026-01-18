@@ -2,8 +2,7 @@ package cn.krismile.ai.agent.structure.chat.chatmodel;
 
 import cn.krismile.ai.agent.model.request.model.ChatModelRequest;
 import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
-
-import java.util.List;
+import reactor.core.publisher.Flux;
 
 /**
  * 模型服务
@@ -19,6 +18,6 @@ public interface ChatModelService {
      * @param query 查询参数
      * @return 模型列表
      */
-    List<ChatModelVO> listChatModels(ChatModelRequest query);
+    Flux<ChatModelVO> listChatModels(ChatModelRequest query);
 
 }

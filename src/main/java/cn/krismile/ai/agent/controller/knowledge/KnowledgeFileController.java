@@ -33,22 +33,44 @@ public class KnowledgeFileController {
     @Resource
     private FileService fileService;
 
+    /**
+     * 查询文件列表
+     *
+     * @param knowledgeId 知识库ID
+     * @return 文件列表
+     * @since 1.0.0
+     */
     @Operation(summary = "查询文件列表", parameters = {
             @Parameter(name = "knowledgeId", description = "知识库 ID", schema = @Schema(type = "string"))
     })
     @GetMapping("/list/{knowledgeId}")
-    public VO<List<KnowledgeFileVO>> list(@PathVariable Long knowledgeId) {
-        return R.data(this.fileService.list(knowledgeId));
+    public Mono<VO<List<KnowledgeFileVO>>> list(@PathVariable Long knowledgeId) {
+        return this.fileService.list(knowledgeId).collectList().map(R::data);
     }
 
+    /**
+     * 查询文件详情
+     *
+     * @param fileId 文件ID
+     * @return 文件详情列表
+     * @since 1.0.0
+     */
     @Operation(summary = "查询文件详情", parameters = {
             @Parameter(name = "fileId", description = "文件 ID", schema = @Schema(type = "string"))
     })
     @GetMapping("/listFileDetails/{fileId}")
-    public VO<List<KnowledgeFileDetailVO>> listFileDetails(@PathVariable Long fileId) {
-        return R.data(this.fileService.listFileDetails(fileId));
+    public Mono<VO<List<KnowledgeFileDetailVO>>> listFileDetails(@PathVariable Long fileId) {
+        return this.fileService.listFileDetails(fileId).collectList().map(R::data);
     }
 
+    /**
+     * 上传文件
+     *
+     * @param knowledgeId 知识库ID
+     * @param files 文件流
+     * @return 上传结果列表
+     * @since 1.0.0
+     */
     @Operation(summary = "上传文件", parameters = {
             @Parameter(name = "knowledgeId", description = "知识库 ID", schema = @Schema(type = "string")),
             @Parameter(name = "files", description = "文件", schema = @Schema(type = "file"), example = "文件内容")
@@ -60,6 +82,14 @@ public class KnowledgeFileController {
         return this.fileService.uploads(knowledgeId, files).collectList().map(R::data);
     }
 
+    /**
+     * 保存文件
+     *
+     * @param knowledgeId 知识库ID
+     * @param requests 文件保存请求列表
+     * @return 保存后的文件ID列表
+     * @since 1.0.0
+     */
     @Operation(summary = "保存文件", parameters = {
             @Parameter(name = "knowledgeId", description = "知识库 ID", schema = @Schema(type = "string"))
     })
@@ -70,11 +100,18 @@ public class KnowledgeFileController {
         return this.fileService.add(knowledgeId, requests).collectList().map(R::data);
     }
 
+    /**
+     * 删除文件
+     *
+     * @param fileId 文件ID
+     * @return 是否删除成功
+     * @since 1.0.0
+     */
     @Operation(summary = "删除文件", parameters = {
             @Parameter(name = "fileId", description = "文件 ID", schema = @Schema(type = "string"))
     })
     @DeleteMapping("/del/{fileId}")
-    public VO<Boolean> del(@PathVariable Long fileId) {
-        return R.data(this.fileService.del(fileId));
+    public Mono<VO<Boolean>> del(@PathVariable Long fileId) {
+        return this.fileService.del(fileId).map(R::data);
     }
 }

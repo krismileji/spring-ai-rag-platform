@@ -1,6 +1,5 @@
 package cn.krismile.ai.agent.structure.chat.platoform.service;
 
-import cn.krismile.ai.agent.model.domain.AiModelDO;
 import cn.krismile.ai.agent.model.domain.AiPlatformDO;
 import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
 import cn.krismile.ai.agent.model.request.chat.ChatModelEditRequest;
@@ -8,7 +7,9 @@ import cn.krismile.ai.agent.model.request.chat.ChatOptionsRequest;
 import cn.krismile.ai.agent.model.request.chat.ChatPlatformEditRequest;
 import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
 import cn.krismile.ai.agent.model.response.chat.ChatPlatformVO;
+import cn.krismile.ai.agent.repository.platform.AiModelRepository;
 import cn.krismile.ai.agent.repository.platform.AiPlatformRepository;
+import cn.krismile.ai.agent.structure.chat.platoform.strategy.AbstractChatPlatformStrategy;
 import cn.krismile.ai.agent.util.AESEncryptionUtil;
 import host.springboot.framework3.core.enumeration.error.ErrorCodeEnum;
 import host.springboot.framework3.core.exception.ApplicationException;
@@ -19,15 +20,8 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static cn.krismile.ai.agent.model.domain.table.AiModelDOTableDef.AI_MODEL_DO;
-import static cn.krismile.ai.agent.model.domain.table.AiPlatformDOTableDef.AI_PLATFORM_DO;
 
 /**
  * 平台服务实现
@@ -41,27 +35,27 @@ public class PlatformServiceImpl implements PlatformService {
     @Resource
     private AiPlatformRepository aiPlatformRepository;
     @Resource
+    private AiModelRepository aiModelRepository;
+    @Resource
     private ReactiveRedisTemplate<String, ChatModelVO> reactiveRedisTemplate;
 
     @Override
-    public List<ChatPlatformVO> listPlatforms() {
-        Map<ChatPlatformEnum, AiPlatformDO> platform2Data = AiPlatformDO.create()
-                .where(AI_PLATFORM_DO.PLATFORM.in(Arrays.stream(ChatPlatformEnum.values()).map(ChatPlatformEnum::getValue).toList()))
-                .list().stream()
-                .collect(Collectors.toMap(AiPlatformDO::getPlatform, Function.identity()));
-        return Arrays.stream(ChatPlatformEnum.values())
-                .map(platform -> ChatPlatformVO.of(Optional.ofNullable(platform2Data.get(platform))
-                        .orElseGet(() -> AiPlatformDO.create().setPlatform(platform))))
-                .toList();
+    public Mono<List<ChatPlatformVO>> listPlatforms() {
+        return aiPlatformRepository.findAll()
+                .collectList()
+                .map(platforms -> platforms.stream()
+                        .map(ChatPlatformVO::of)
+                        .toList());
     }
 
     @Override
-    public Flux<ChatModelVO> listModels(ChatPlatformEnum platform) {
-        return platform.strategy().listAllModels();
+    public Flux<ChatModelVO> listModels() {
+        return aiPlatformRepository.findByEnabled(true)
+                .flatMap(platform -> platform.getPlatform().strategy().listAllModels());
     }
 
     @Override
-    public Boolean editPlatform(ChatPlatformEditRequest request) {
+    public Mono<Boolean> editPlatform(ChatPlatformEditRequest request) {
         ChatPlatformEnum platform = request.getPlatform();
         String apiKey = request.getApiKey();
         ChatOptionsRequest defaultOptions = request.getDefaultOptions();
@@ -69,15 +63,21 @@ public class PlatformServiceImpl implements PlatformService {
 
         String encodedApiKey = StringUtils.isNotBlank(apiKey) ? AESEncryptionUtil.encrypt(apiKey, SECRET_KEY) : null;
 
-        this.aiPlatformRepository.getOrInitIfNull(platform)
-                .setPlatform(platform)
-                .setApiKey(encodedApiKey)
-                .setDefaultOptions(defaultOptions)
-                .setEnabled(enabled)
-                .saveOrUpdateOpt()
-                .orElseThrow(() -> new ApplicationException(
-                        ErrorCodeEnum.DATABASE_SERVICE_ERROR, "Failed to edit platform"));
-        return true;
+        return aiPlatformRepository.findByPlatform(platform)
+                .switchIfEmpty(Mono.defer(() -> {
+                    AiPlatformDO newPlatform = new AiPlatformDO();
+                    newPlatform.setPlatform(platform);
+                    return Mono.just(newPlatform);
+                }))
+                .flatMap(p -> {
+                    Optional.ofNullable(encodedApiKey).ifPresent(p::setApiKey);
+                    Optional.ofNullable(defaultOptions).ifPresent(p::setDefaultOptions);
+                    p.setEnabled(enabled);
+                    return aiPlatformRepository.save(p);
+                })
+                .switchIfEmpty(Mono.error(new ApplicationException(
+                        ErrorCodeEnum.DATABASE_SERVICE_ERROR, "Failed to edit platform")))
+                .thenReturn(true);
     }
 
     @Override
@@ -86,13 +86,30 @@ public class PlatformServiceImpl implements PlatformService {
         String model = request.getModel();
         Boolean enabled = request.getEnabled();
 
-        AiModelDO.create()
-                .where(AI_MODEL_DO.ID.eq(id))
-                .where(AI_MODEL_DO.CODE.eq(model))
-                .setEnabled(enabled)
-                .updateOpt()
-                .orElseThrow(() -> new ApplicationException(
-                        ErrorCodeEnum.DATABASE_SERVICE_ERROR, "Failed to update model"));
-        return Mono.empty();
+        return aiModelRepository.findById(id)
+                .filter(m -> m.getCode().equals(model))
+                .flatMap(m -> aiModelRepository.save(m.setEnabled(enabled))
+                        .flatMap(savedModel -> aiPlatformRepository.findById(savedModel.getRelPlatformId())
+                                .flatMap(platform -> {
+                                    ChatPlatformEnum platformEnum = platform.getPlatform();
+                                    String cacheKey = AbstractChatPlatformStrategy.REDIS_MODEL_CACHE_KEY.apply(platformEnum);
+
+                                    ChatModelVO vo = new ChatModelVO()
+                                            .setId(savedModel.getId())
+                                            .setPlatform(platformEnum.getValue())
+                                            .setPlatformName(platformEnum.getReasonPhrase())
+                                            .setModel(savedModel.getCode())
+                                            .setModelName(savedModel.getName())
+                                            .setDescription(savedModel.getDescription())
+                                            .setEnabled(savedModel.getEnabled())
+                                            .setSort(savedModel.getSort());
+
+                                    return reactiveRedisTemplate.opsForHash()
+                                            .put(cacheKey, vo.getModel(), vo)
+                                            .thenReturn(savedModel);
+                                })))
+                .switchIfEmpty(Mono.error(new ApplicationException(
+                        ErrorCodeEnum.DATABASE_SERVICE_ERROR, "Failed to update model")))
+                .thenReturn(true);
     }
 }

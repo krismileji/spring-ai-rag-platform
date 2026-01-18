@@ -1,13 +1,11 @@
 package cn.krismile.ai.agent.model.domain;
 
 import cn.krismile.ai.agent.model.request.chat.ChatOptionsRequest;
-import com.mybatisflex.annotation.Column;
-import com.mybatisflex.annotation.Table;
-import com.mybatisflex.core.handler.JacksonTypeHandler;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
+import org.springframework.data.relational.core.mapping.Table;
 
 /**
  * AI 模型表
@@ -15,12 +13,12 @@ import lombok.experimental.Accessors;
  * @author Auto Generated
  * @since 1.0.0
  */
-@Data(staticConstructor = "create")
+@Data
 @Accessors(chain = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Table("ai_model")
-public class AiModelDO extends BaseAssignDO<AiModelDO> {
+public class AiModelDO extends BaseIdDO {
 
     /**
      * 模型编码
@@ -40,7 +38,6 @@ public class AiModelDO extends BaseAssignDO<AiModelDO> {
     /**
      * 默认配置
      */
-    @Column(typeHandler = JacksonTypeHandler.class)
     private ChatOptionsRequest defaultOptions;
 
     /**

@@ -1,13 +1,19 @@
 package cn.krismile.ai.agent.repository.user;
 
 import cn.krismile.ai.agent.model.domain.UserDO;
-import com.mybatisflex.core.service.IService;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Mono;
 
 /**
- * 用户服务
+ * UserRepository
  *
  * @author JiYinchuan
  * @since 1.0.0
  */
-public interface UserRepository extends IService<UserDO> {
+@Repository
+public interface UserRepository extends R2dbcRepository<UserDO, Long> {
+
+    Mono<UserDO> findByUsername(String username);
+
 }

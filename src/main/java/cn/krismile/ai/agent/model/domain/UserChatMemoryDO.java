@@ -1,11 +1,11 @@
 package cn.krismile.ai.agent.model.domain;
 
-import com.mybatisflex.annotation.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.data.relational.core.mapping.Table;
 
 /**
  * 用户聊天记录表
@@ -13,12 +13,12 @@ import org.springframework.ai.chat.messages.MessageType;
  * @author JiYinchuan
  * @since 1.0.0
  */
-@Data(staticConstructor = "create")
+@Data
 @Accessors(chain = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Table("user_chat_memory")
-public class UserChatMemoryDO extends BaseAssignDO<UserChatMemoryDO> {
+public class UserChatMemoryDO extends BaseIdDO {
 
     /**
      * 模型
@@ -49,10 +49,5 @@ public class UserChatMemoryDO extends BaseAssignDO<UserChatMemoryDO> {
      * 关联用户 ID
      */
     private Long relUserId;
-
-    /**
-     * 逻辑删除
-     */
-    private Boolean delFlag;
 
 }

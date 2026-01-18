@@ -1,6 +1,8 @@
 spring:
   data:
     redis:
+      repositories:
+        enabled: false
       database: 0
       connect-timeout: 10s
       lettuce:

@@ -39,6 +39,7 @@ public class DeepSeekChatStrategyImpl extends AbstractChatPlatformStrategy imple
                         .setPlatformName(this.platform().getReasonPhrase())
                         .setModel("deepseek-reasoner")
                         .setModelName("DeepSeek-V3.2（思考模式）")
+                        .setEnabled(true)
                         .setSort(modelIndex.getAndIncrement()));
     }
 }

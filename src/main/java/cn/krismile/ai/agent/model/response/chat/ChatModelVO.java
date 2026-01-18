@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import java.io.Serializable;
+
 /**
  * 聊天模型返回值
  *
@@ -13,7 +15,7 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(chain = true)
 @Schema(description = "聊天模型 VO")
-public class ChatModelVO {
+public class ChatModelVO implements Serializable {
 
     @Schema(description = "ID")
     private Long id;
@@ -32,6 +34,9 @@ public class ChatModelVO {
 
     @Schema(description = "描述")
     private String description;
+
+    @Schema(description = "是否启用")
+    private Boolean enabled;
 
     @Schema(description = "排序")
     private Integer sort;

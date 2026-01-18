@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -29,9 +30,16 @@ public class ChatModelController {
     @Resource
     private ChatModelService chatModelService;
 
+    /**
+     * 查询聊天模型列表
+     *
+     * @param query 查询参数
+     * @return 聊天模型列表
+     * @since 1.0.0
+     */
     @Operation(summary = "聊天模型列表")
     @GetMapping("/chat/list")
-    public VO<List<ChatModelVO>> chatModelList(@ModelAttribute ChatModelRequest query) {
-        return R.data(this.chatModelService.listChatModels(query));
+    public Mono<VO<List<ChatModelVO>>> chatModelList(@ModelAttribute ChatModelRequest query) {
+        return this.chatModelService.listChatModels(query).collectList() .map(R::data);
     }
 }

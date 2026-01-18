@@ -6,11 +6,10 @@ import cn.krismile.ai.agent.model.response.knowledge.KnowledgeFileUploadVO;
 import cn.krismile.ai.agent.model.response.knowledge.KnowledgeFileVO;
 import org.springframework.http.codec.multipart.FilePart;
 import reactor.core.publisher.Flux;
-
-import java.util.List;
+import reactor.core.publisher.Mono;
 
 /**
- * RAG 文件服务
+ * FileService
  *
  * @author JiYinchuan
  * @since 1.0.0
@@ -18,39 +17,39 @@ import java.util.List;
 public interface FileService {
 
     /**
-     * 获取文件列表
+     * 查询文件列表
      *
      * @param knowledgeId 知识库 ID
-     * @return 文件列表
+     * @return 列表
      * @since 1.0.0
      */
-    List<KnowledgeFileVO> list(Long knowledgeId);
+    Flux<KnowledgeFileVO> list(Long knowledgeId);
 
     /**
-     * 获取文件详情
+     * 查询文件详情
      *
      * @param fileId 文件 ID
-     * @return 文件详情
+     * @return 详情
      * @since 1.0.0
      */
-    List<KnowledgeFileDetailVO> listFileDetails(Long fileId);
+    Flux<KnowledgeFileDetailVO> listFileDetails(Long fileId);
 
     /**
      * 上传文件
      *
      * @param knowledgeId 知识库 ID
      * @param files       文件
-     * @return 是否成功
+     * @return 上传结果
      * @since 1.0.0
      */
     Flux<KnowledgeFileUploadVO> uploads(Long knowledgeId, Flux<FilePart> files);
 
     /**
-     * 新增文件内容
+     * 保存文件
      *
      * @param knowledgeId 知识库 ID
      * @param requests    请求
-     * @return 失败的文件 ID 列表
+     * @return 文件 ID 列表
      * @since 1.0.0
      */
     Flux<Long> add(Long knowledgeId, Flux<KnowledgeFileAddRequest> requests);
@@ -62,6 +61,5 @@ public interface FileService {
      * @return 是否成功
      * @since 1.0.0
      */
-    Boolean del(Long fileId);
-
+    Mono<Boolean> del(Long fileId);
 }

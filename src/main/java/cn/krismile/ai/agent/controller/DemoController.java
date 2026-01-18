@@ -4,6 +4,7 @@ import host.springboot.framework3.core.response.R;
 import host.springboot.framework3.core.response.vo.VO;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
 /**
  * DemoController
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class DemoController {
 
     @GetMapping("/demo")
-    public VO<?> demo() {
-        return R.ok();
+    public Mono<VO<?>> demo() {
+        return Mono.fromSupplier(R::ok);
     }
 }

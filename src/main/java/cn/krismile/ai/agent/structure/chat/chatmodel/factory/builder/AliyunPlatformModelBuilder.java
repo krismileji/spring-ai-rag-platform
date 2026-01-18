@@ -20,6 +20,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 /**
  * 阿里云平台下 Chat 模型的构建器
@@ -75,7 +76,7 @@ public class AliyunPlatformModelBuilder extends AbstractPlatformModelBuilder imp
     }
 
     @Override
-    public ChatModel expander() {
+    public Mono<ChatModel> expander() {
         return this.chat("qwen-turbo", PlatformChatOptions.builder().temperature(0.1));
     }
 

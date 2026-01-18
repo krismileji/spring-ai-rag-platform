@@ -1,13 +1,22 @@
 package cn.krismile.ai.agent.repository.knowledge;
 
 import cn.krismile.ai.agent.model.domain.UserKnowledgeFileDetailDO;
-import com.mybatisflex.core.service.IService;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
- * 用户-知识库文件详情服务
+ * UserKnowledgeFileDetailRepository
  *
  * @author JiYinchuan
  * @since 1.0.0
  */
-public interface UserKnowledgeFileDetailRepository extends IService<UserKnowledgeFileDetailDO> {
+@Repository
+public interface UserKnowledgeFileDetailRepository extends R2dbcRepository<UserKnowledgeFileDetailDO, Long> {
+
+    Flux<UserKnowledgeFileDetailDO> findByRelFileId(Long relFileId);
+
+    Mono<Void> deleteByRelFileId(Long relFileId);
+
 }

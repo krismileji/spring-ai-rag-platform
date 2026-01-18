@@ -3,8 +3,9 @@ package cn.krismile.ai.agent.model.request.chat;
 import cn.krismile.ai.agent.model.enumeration.chat.ChatKnowledgeTypeEnum;
 import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import lombok.experimental.Accessors;
+import jakarta.validation.constraints.NotBlank;
 
 import javax.validation.constraints.NotNull;
 
@@ -15,6 +16,7 @@ import javax.validation.constraints.NotNull;
  * @since 1.0.0
  */
 @Data
+@Accessors(chain = true)
 @Schema(description = "聊天请求")
 public class ChatRequest {
 

@@ -17,6 +17,12 @@ import java.time.Duration;
 @Configuration
 public class WebClientConfiguration {
 
+    /**
+     * WebClient自定义配置
+     *
+     * @return WebClient自定义器
+     * @since 1.0.0
+     */
     @Bean
     public WebClientCustomizer webClientCustomizer() {
         return builder -> builder

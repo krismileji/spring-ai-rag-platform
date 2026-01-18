@@ -107,6 +107,7 @@ public class AliYunChatStrategyImpl extends AbstractChatPlatformStrategy impleme
                                 .setModel(model.get("model").asText())
                                 .setModelName(model.get("name").asText())
                                 .setDescription(model.get("description").asText())
+                                .setEnabled(true)
                                 .setSort(modelIndex.getAndIncrement())
                         )))
                         .orElseGet(Flux::empty)

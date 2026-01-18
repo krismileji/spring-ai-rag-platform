@@ -1,10 +1,13 @@
 package cn.krismile.ai.agent.model.domain;
 
-import com.mybatisflex.annotation.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.domain.Persistable;
+import org.springframework.data.relational.core.mapping.Table;
 
 /**
  * 用户聊天会话表
@@ -12,16 +15,17 @@ import lombok.experimental.Accessors;
  * @author JiYinchuan
  * @since 1.0.0
  */
-@Data(staticConstructor = "create")
+@Data
 @Accessors(chain = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Table("user_chat_conversation")
-public class UserChatConversationDO extends BaseDO<String, UserChatConversationDO> {
+public class UserChatConversationDO extends BaseDO implements Persistable<String> {
 
     /**
      * 唯一 ID
      */
+    @Id
     private String id;
 
     /**
@@ -34,9 +38,11 @@ public class UserChatConversationDO extends BaseDO<String, UserChatConversationD
      */
     private Long relUserId;
 
-    /**
-     * 逻辑删除
-     */
-    private Boolean delFlag;
+    @Transient
+    private boolean isNew;
 
+    @Override
+    public boolean isNew() {
+        return this.isNew || this.id == null;
+    }
 }

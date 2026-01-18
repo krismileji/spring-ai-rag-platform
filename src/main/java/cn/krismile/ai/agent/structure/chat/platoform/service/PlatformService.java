@@ -1,6 +1,5 @@
 package cn.krismile.ai.agent.structure.chat.platoform.service;
 
-import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
 import cn.krismile.ai.agent.model.request.chat.ChatModelEditRequest;
 import cn.krismile.ai.agent.model.request.chat.ChatPlatformEditRequest;
 import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
@@ -24,18 +23,17 @@ public interface PlatformService {
      * 列表
      *
      * @return 模型列表
-     * @since 1..0.0
+     * @since 1.0.0
      */
-    List<ChatPlatformVO> listPlatforms();
+    Mono<List<ChatPlatformVO>> listPlatforms();
 
     /**
      * 模型列表
      *
-     * @param platform 平台
      * @return 模型列表
      * @since 1.0.0
      */
-    Flux<ChatModelVO> listModels(ChatPlatformEnum platform);
+    Flux<ChatModelVO> listModels();
 
     /**
      * 编辑平台
@@ -44,7 +42,7 @@ public interface PlatformService {
      * @return 是否编辑成功
      * @since 1.0.0
      */
-    Boolean editPlatform(ChatPlatformEditRequest request);
+    Mono<Boolean> editPlatform(ChatPlatformEditRequest request);
 
     /**
      * 编辑模型

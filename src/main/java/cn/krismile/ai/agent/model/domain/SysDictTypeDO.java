@@ -1,11 +1,11 @@
 package cn.krismile.ai.agent.model.domain;
 
 import cn.krismile.ai.agent.model.enumeration.DictTypeEnum;
-import com.mybatisflex.annotation.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
+import org.springframework.data.relational.core.mapping.Table;
 
 /**
  * 系统字典类型表
@@ -13,12 +13,12 @@ import lombok.experimental.Accessors;
  * @author JiYinchuan
  * @since 1.0.0
  */
-@Data(staticConstructor = "create")
+@Data
 @Accessors(chain = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Table("sys_dict_type")
-public class SysDictTypeDO extends BaseAssignDO<SysDictTypeDO> {
+public class SysDictTypeDO extends BaseIdDO {
 
     /**
      * 字典类型

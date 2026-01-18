@@ -1,11 +1,11 @@
 package cn.krismile.ai.agent.model.domain;
 
 import cn.krismile.ai.agent.model.enumeration.UserStatusEnum;
-import com.mybatisflex.annotation.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
+import org.springframework.data.relational.core.mapping.Table;
 
 /**
  * 用户表
@@ -13,12 +13,12 @@ import lombok.experimental.Accessors;
  * @author JiYinchuan
  * @since 1.0.0
  */
-@Data(staticConstructor = "create")
+@Data
 @Accessors(chain = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Table("user")
-public class UserDO extends BaseAssignDO<UserDO> {
+public class UserDO extends BaseIdDO {
 
     /**
      * 用户名

@@ -1,9 +1,7 @@
 package cn.krismile.ai.agent.structure.rag.file.parser;
 
-import cn.dev33.satoken.stp.StpUtil;
+import cn.krismile.ai.agent.configuration.security.context.SecurityUtils;
 import cn.krismile.ai.agent.constant.Knowledge;
-import cn.krismile.ai.agent.context.RequestContext;
-import cn.krismile.ai.agent.structure.SchedulerDelegate;
 import cn.krismile.ai.agent.structure.rag.file.FileParser;
 import com.alibaba.cloud.ai.transformer.splitter.RecursiveCharacterTextSplitter;
 import org.springframework.ai.document.Document;
@@ -12,7 +10,6 @@ import org.springframework.ai.reader.markdown.config.MarkdownDocumentReaderConfi
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.codec.multipart.FilePart;
 import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 
@@ -25,10 +22,8 @@ import java.util.List;
 public class MarkdownFileParser implements FileParser {
     @Override
     public Flux<Document> parse(FilePart file) {
-        // 在响应式流订阅前先获取userId，避免在异步线程中访问ThreadLocal导致NPE
-        Long userId = RequestContext.syncApply(StpUtil::getLoginIdAsLong);
-        return file.content()
-                .publishOn(SchedulerDelegate.create(Schedulers.boundedElastic()))
+        return SecurityUtils.getUserId()
+                .flatMapMany(userId -> file.content()
                 .map(dataBuffer -> new InputStreamResource(dataBuffer.asInputStream()))
                 .flatMap(resource -> {
                     MarkdownDocumentReaderConfig config = MarkdownDocumentReaderConfig.builder()
@@ -45,7 +40,7 @@ public class MarkdownFileParser implements FileParser {
                     MarkdownDocumentReader reader = new MarkdownDocumentReader(resource, config);
                     List<Document> documents = reader.get();
                     return Flux.fromIterable(documents);
-                });
+                }));
     }
 
     @Override

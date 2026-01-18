@@ -1,13 +1,22 @@
 package cn.krismile.ai.agent.repository.system;
 
 import cn.krismile.ai.agent.model.domain.SysDictTypeDO;
-import com.mybatisflex.core.service.IService;
+import cn.krismile.ai.agent.model.enumeration.DictTypeEnum;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Mono;
 
 /**
- * 系统字典类型服务
+ * SysDictTypeRepository
  *
  * @author JiYinchuan
  * @since 1.0.0
  */
-public interface SysDictTypeRepository extends IService<SysDictTypeDO> {
+@Repository
+public interface SysDictTypeRepository extends R2dbcRepository<SysDictTypeDO, Long> {
+
+    Mono<SysDictTypeDO> findByType(DictTypeEnum type);
+
+    Mono<Void> deleteByType(DictTypeEnum type);
+
 }
