@@ -22,7 +22,6 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
-
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 /**
@@ -38,8 +37,8 @@ public class ChatConfiguration {
      * 聊天记录仓库
      *
      * @param userChatConversationRepository 用户聊天会话仓库
-     * @param userChatMemoryRepository 用户聊天记录仓库
-     * @param transactionalOperator 事务操作符
+     * @param userChatMemoryRepository       用户聊天记录仓库
+     * @param transactionalOperator          事务操作符
      * @return 聊天记录仓库实例
      * @since 1.0.0
      */
@@ -93,12 +92,12 @@ public class ChatConfiguration {
     /**
      * 向量存储
      *
-     * @param dashscopeEmbeddingModel 嵌入模型
-     * @param properties 配置属性
-     * @param qdrantClient Qdrant客户端
-     * @param observationRegistry 观察注册表
+     * @param dashscopeEmbeddingModel     嵌入模型
+     * @param properties                  配置属性
+     * @param qdrantClient                Qdrant 客户端
+     * @param observationRegistry         观察注册表
      * @param customObservationConvention 自定义观察约定
-     * @param batchingStrategy 批处理策略
+     * @param batchingStrategy            批处理策略
      * @return 向量存储实例
      * @since 1.0.0
      */

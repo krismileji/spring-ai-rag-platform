@@ -1,6 +1,7 @@
 package cn.krismile.ai.agent.structure.rag.file.service;
 
 import cn.krismile.ai.agent.configuration.security.context.SecurityUtils;
+import cn.krismile.ai.agent.constant.Knowledge;
 import cn.krismile.ai.agent.model.domain.UserKnowledgeFileDO;
 import cn.krismile.ai.agent.model.domain.UserKnowledgeFileDetailDO;
 import cn.krismile.ai.agent.model.enumeration.UserKnowledgeFileStatusEnum;
@@ -82,8 +83,8 @@ public class FileServiceImpl implements FileService, LoggingComponent {
     /**
      * 处理文件上传
      *
-     * @param knowledgeId 知识库ID
-     * @param loginId     登录用户ID
+     * @param knowledgeId 知识库 ID
+     * @param loginId     登录用户 ID
      * @param file        文件分片
      * @return 上传结果
      * @since 1.0.0
@@ -97,8 +98,8 @@ public class FileServiceImpl implements FileService, LoggingComponent {
         if (StringUtils.isBlank(extension)) {
             return Mono.error(new ApplicationException(ErrorCodeEnum.USER_UPLOAD_FILE_ERROR, "文件扩展名不能为空"));
         }
-
-        return FileParser.create(extension).parse(file)
+        FileParser fileParser = FileParser.create(extension);
+        return fileParser.transform(fileParser.parse(file))
                 .collectList()
                 .subscribeOn(Schedulers.boundedElastic())
                 .flatMap(documents -> {
@@ -111,6 +112,8 @@ public class FileServiceImpl implements FileService, LoggingComponent {
                     return userKnowledgeFileRepository.save(fileDO)
                             .flatMap(savedFile -> {
                                 List<UserKnowledgeFileDetailDO> details = documents.stream().map(document -> {
+                                    // 添加用户 ID 元数据
+                                    document.getMetadata().put(Knowledge.MetaData.USER_ID, loginId);
                                     UserKnowledgeFileDetailDO detail = new UserKnowledgeFileDetailDO();
                                     detail.setDocumentId(document.getId());
                                     detail.setContent(document.getText());
@@ -138,9 +141,9 @@ public class FileServiceImpl implements FileService, LoggingComponent {
     /**
      * 处理文件添加
      *
-     * @param loginId 登录用户ID
+     * @param loginId 登录用户 ID
      * @param request 添加请求
-     * @return 文件ID
+     * @return 文件 ID
      * @since 1.0.0
      */
     private Mono<Long> processAdd(Long loginId, KnowledgeFileAddRequest request) {
@@ -168,7 +171,7 @@ public class FileServiceImpl implements FileService, LoggingComponent {
     /**
      * 处理文件详情更新
      *
-     * @param fileId     文件ID
+     * @param fileId     文件 ID
      * @param reqDetails 详情请求列表
      * @return Void
      * @since 1.0.0
