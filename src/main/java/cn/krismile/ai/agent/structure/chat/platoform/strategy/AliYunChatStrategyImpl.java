@@ -1,5 +1,6 @@
 package cn.krismile.ai.agent.structure.chat.platoform.strategy;
 
+import cn.krismile.ai.agent.model.enumeration.chat.ChatModelTypeEnum;
 import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
 import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
 import cn.krismile.ai.agent.structure.chat.platoform.ChatPlatformStrategy;
@@ -40,7 +41,7 @@ public class AliYunChatStrategyImpl extends AbstractChatPlatformStrategy impleme
     }
 
     @Override
-    protected Flux<ChatModelVO> queryModels() {
+    protected Flux<ChatModelVO> queryModels(ChatModelTypeEnum type) {
         AtomicInteger modelIndex = new AtomicInteger(0);
         return webClientBuilder.baseUrl("https://bailian-cs.console.aliyun.com")
                 .build()
@@ -48,25 +49,7 @@ public class AliYunChatStrategyImpl extends AbstractChatPlatformStrategy impleme
                 .uri("/data/api.json")
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED.toString())
                 .body(BodyInserters.fromFormData("region", "cn-beijing")
-                        .with("params", """
-                                {
-                                	"Api": "zeldaHttp.dashscopeModel./zelda/api/v1/modelCenter/listFoundationModels",
-                                	"V": "1.0",
-                                	"Data": {
-                                		"input": {
-                                			"pageNo": 1,
-                                			"pageSize": 60,
-                                			"group": true,
-                                			"capabilities": [
-                                				"TG"
-                                			]
-                                		},
-                                		"cornerstoneParam": {
-                                			"feURL": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/all"
-                                		}
-                                	}
-                                }
-                                """))
+                        .with("params", this.parseParams(type)))
                 .retrieve()
                 .bodyToMono(ObjectNode.class)
                 .filter(objectNode -> objectNode.optional("code")
@@ -102,6 +85,7 @@ public class AliYunChatStrategyImpl extends AbstractChatPlatformStrategy impleme
                         })
                         .map(Collection::stream)
                         .map(modelStream -> Flux.fromStream(modelStream.map(model -> new ChatModelVO()
+                                .setType(type)
                                 .setPlatform(this.platform().getValue())
                                 .setPlatformName(this.platform().getReasonPhrase())
                                 .setModel(model.get("model").asText())
@@ -112,5 +96,39 @@ public class AliYunChatStrategyImpl extends AbstractChatPlatformStrategy impleme
                         )))
                         .orElseGet(Flux::empty)
                 );
+    }
+
+    /**
+     * 解析参数
+     *
+     * @param type 模型类型
+     * @return 参数
+     * @since 1.0.0
+     */
+    private String parseParams(ChatModelTypeEnum type) {
+        String capability = switch (type) {
+            case CHAT -> "TG";
+            case EMBEDDING -> "TR";
+            default -> throw new IllegalArgumentException("Invalid type: " + type);
+        };
+        return """
+                {
+                  "Api": "zeldaHttp.dashscopeModel./zelda/api/v1/modelCenter/listFoundationModels",
+                  "V": "1.0",
+                  "Data": {
+                    "input": {
+                      "pageNo": 1,
+                      "pageSize": 60,
+                      "group": true,
+                      "capabilities": [
+                        "%s"
+                      ]
+                    },
+                    "cornerstoneParam": {
+                      "feURL": "https://bailian.console.aliyun.com/cn-beijing/?tab=model#/model-market/all"
+                    }
+                  }
+                }
+                """.formatted(capability);
     }
 }

@@ -31,7 +31,7 @@ public class CustomServerAuthenticationEntryPoint implements ServerAuthenticatio
         exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
         // 构建统一响应体
-        VO<?> result = R.fail(ErrorCodeEnum.ACCESS_UNAUTHORIZED);
+        VO<?> result = R.fail(ErrorCodeEnum.ACCESS_UNAUTHORIZED, "请先登录");
         String body = ObjectMapperUtils.writeValueAsStringFailSafe(result);
         if (body == null) {
             body = "{\"code\":401,\"msg\":\"Unauthorized\",\"data\":null}";

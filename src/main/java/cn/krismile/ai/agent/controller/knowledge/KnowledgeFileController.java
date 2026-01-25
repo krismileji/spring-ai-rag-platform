@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -96,7 +97,7 @@ public class KnowledgeFileController {
     @PutMapping("/add/{knowledgeId}")
     public Mono<VO<List<Long>>> add(
             @PathVariable Long knowledgeId,
-            @RequestBody Flux<KnowledgeFileAddRequest> requests) {
+            @RequestBody @Valid Flux<KnowledgeFileAddRequest> requests) {
         return this.fileService.add(knowledgeId, requests).collectList().map(R::data);
     }
 

@@ -1,5 +1,6 @@
 package cn.krismile.ai.agent.structure.chat.chatmodel;
 
+import cn.krismile.ai.agent.model.enumeration.chat.ChatModelTypeEnum;
 import cn.krismile.ai.agent.model.request.model.ChatModelRequest;
 import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
 import cn.krismile.ai.agent.repository.platform.AiPlatformRepository;
@@ -23,7 +24,7 @@ public class ChatModelServiceImpl implements ChatModelService {
     @Override
     public Flux<ChatModelVO> listChatModels(ChatModelRequest query) {
         return aiPlatformRepository.findByEnabled(true)
-                .flatMap(platform -> platform.getPlatform().strategy().listAllModels())
+                .flatMap(platform -> platform.getPlatform().strategy().listAllModels(ChatModelTypeEnum.CHAT))
                 .filter(model -> BooleanUtils.isTrue(model.getEnabled()));
     }
 }

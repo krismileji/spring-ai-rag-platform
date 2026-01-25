@@ -1,5 +1,6 @@
 package cn.krismile.ai.agent.structure.chat.platoform.service;
 
+import cn.krismile.ai.agent.model.enumeration.chat.ChatModelTypeEnum;
 import cn.krismile.ai.agent.model.request.chat.ChatModelEditRequest;
 import cn.krismile.ai.agent.model.request.chat.ChatPlatformEditRequest;
 import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
@@ -30,10 +31,11 @@ public interface PlatformService {
     /**
      * 模型列表
      *
+     * @param type 模型类型
      * @return 模型列表
      * @since 1.0.0
      */
-    Flux<ChatModelVO> listModels();
+    Flux<ChatModelVO> listModels(ChatModelTypeEnum type);
 
     /**
      * 编辑平台
@@ -47,10 +49,11 @@ public interface PlatformService {
     /**
      * 编辑模型
      *
+     * @param type    模型类型
      * @param request 请求参数
      * @return 是否编辑成功
      * @since 1.0.0
      */
-    Mono<Boolean> editModel(ChatModelEditRequest request);
+    Mono<Boolean> editModel(ChatModelTypeEnum type, ChatModelEditRequest request);
 
 }

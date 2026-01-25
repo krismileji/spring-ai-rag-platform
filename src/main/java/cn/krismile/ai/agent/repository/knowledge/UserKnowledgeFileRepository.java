@@ -7,6 +7,8 @@ import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Collection;
+
 /**
  * UserKnowledgeFileRepository
  *
@@ -20,4 +22,5 @@ public interface UserKnowledgeFileRepository extends R2dbcRepository<UserKnowled
 
     Mono<UserKnowledgeFileDO> findByIdAndRelUserId(Long id, Long relUserId);
 
+    Flux<UserKnowledgeFileDO> findByRelUserIdAndIdIn(Long relUserId, Collection<Long> ids);
 }

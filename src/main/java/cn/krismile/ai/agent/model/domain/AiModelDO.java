@@ -1,5 +1,6 @@
 package cn.krismile.ai.agent.model.domain;
 
+import cn.krismile.ai.agent.model.enumeration.chat.ChatModelTypeEnum;
 import cn.krismile.ai.agent.model.request.chat.ChatOptionsRequest;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -19,6 +20,11 @@ import org.springframework.data.relational.core.mapping.Table;
 @EqualsAndHashCode(callSuper = true)
 @Table("ai_model")
 public class AiModelDO extends BaseIdDO {
+
+    /**
+     * 模型类型
+     */
+    private ChatModelTypeEnum type;
 
     /**
      * 模型编码

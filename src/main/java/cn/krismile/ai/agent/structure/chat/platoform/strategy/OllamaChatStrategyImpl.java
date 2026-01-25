@@ -1,5 +1,6 @@
 package cn.krismile.ai.agent.structure.chat.platoform.strategy;
 
+import cn.krismile.ai.agent.model.enumeration.chat.ChatModelTypeEnum;
 import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
 import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
 import cn.krismile.ai.agent.structure.chat.platoform.ChatPlatformStrategy;
@@ -34,7 +35,7 @@ public class OllamaChatStrategyImpl extends AbstractChatPlatformStrategy impleme
     }
 
     @Override
-    protected Flux<ChatModelVO> queryModels() {
+    protected Flux<ChatModelVO> queryModels(ChatModelTypeEnum type) {
         AtomicInteger modelIndex = new AtomicInteger(0);
         return this.webClientBuilder.baseUrl(connectionDetails.getBaseUrl())
                 .build()
@@ -45,6 +46,7 @@ public class OllamaChatStrategyImpl extends AbstractChatPlatformStrategy impleme
                 .map(OllamaApi.ListModelResponse::models)
                 .flatMapMany(Flux::fromIterable)
                 .map(model -> new ChatModelVO()
+                        .setType(type)
                         .setPlatform(this.platform().getValue())
                         .setPlatformName(this.platform().getReasonPhrase())
                         .setModel(model.name())

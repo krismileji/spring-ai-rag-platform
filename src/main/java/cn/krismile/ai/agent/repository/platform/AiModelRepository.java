@@ -1,6 +1,7 @@
 package cn.krismile.ai.agent.repository.platform;
 
 import cn.krismile.ai.agent.model.domain.AiModelDO;
+import cn.krismile.ai.agent.model.enumeration.chat.ChatModelTypeEnum;
 import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
@@ -16,6 +17,9 @@ import java.util.Collection;
 @Repository
 public interface AiModelRepository extends R2dbcRepository<AiModelDO, Long> {
 
-    Flux<AiModelDO> findByRelPlatformIdAndCodeIn(Long relPlatformId, Collection<String> codes);
+    Flux<AiModelDO> findByRelPlatformIdAndTypeAndCodeIn(
+            Long relPlatformId,
+            ChatModelTypeEnum type,
+            Collection<String> codes);
 
 }

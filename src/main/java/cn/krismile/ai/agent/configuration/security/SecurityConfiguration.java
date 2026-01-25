@@ -56,7 +56,7 @@ public class SecurityConfiguration {
                         .pathMatchers("/actuator/**", "/favicon.ico").permitAll()
                         // Knife4j / Swagger
                         .pathMatchers("/doc.html", "/webjars/**", "/v3/api-docs/**").permitAll()
-                        .pathMatchers("/chat/message", "/webjars/**", "/v3/api-docs/**").permitAll()
+                        .pathMatchers("/conversation/generate", "/platform/model/**", "/chat/message").permitAll()
                         // Require authentication for all other requests
                         .anyExchange().authenticated()
                 )

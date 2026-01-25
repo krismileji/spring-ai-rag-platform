@@ -20,6 +20,7 @@ target/
 *.ipr
 .fastRequest
 src/main/resources/application-primary.yml
+**/node_modules
 
 ### NetBeans ###
 /nbproject/private/

@@ -1,6 +1,8 @@
 package cn.krismile.ai.agent.structure.chat.platoform.service;
 
+import cn.krismile.ai.agent.constant.RedisKey;
 import cn.krismile.ai.agent.model.domain.AiPlatformDO;
+import cn.krismile.ai.agent.model.enumeration.chat.ChatModelTypeEnum;
 import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
 import cn.krismile.ai.agent.model.request.chat.ChatModelEditRequest;
 import cn.krismile.ai.agent.model.request.chat.ChatOptionsRequest;
@@ -9,7 +11,6 @@ import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
 import cn.krismile.ai.agent.model.response.chat.ChatPlatformVO;
 import cn.krismile.ai.agent.repository.platform.AiModelRepository;
 import cn.krismile.ai.agent.repository.platform.AiPlatformRepository;
-import cn.krismile.ai.agent.structure.chat.platoform.strategy.AbstractChatPlatformStrategy;
 import cn.krismile.ai.agent.util.AESEncryptionUtil;
 import host.springboot.framework3.core.enumeration.error.ErrorCodeEnum;
 import host.springboot.framework3.core.exception.ApplicationException;
@@ -49,9 +50,9 @@ public class PlatformServiceImpl implements PlatformService {
     }
 
     @Override
-    public Flux<ChatModelVO> listModels() {
+    public Flux<ChatModelVO> listModels(ChatModelTypeEnum type) {
         return aiPlatformRepository.findByEnabled(true)
-                .flatMap(platform -> platform.getPlatform().strategy().listAllModels());
+                .flatMap(platform -> platform.getPlatform().strategy().listAllModels(type));
     }
 
     @Override
@@ -81,7 +82,7 @@ public class PlatformServiceImpl implements PlatformService {
     }
 
     @Override
-    public Mono<Boolean> editModel(ChatModelEditRequest request) {
+    public Mono<Boolean> editModel(ChatModelTypeEnum type, ChatModelEditRequest request) {
         Long id = request.getId();
         String model = request.getModel();
         Boolean enabled = request.getEnabled();
@@ -92,10 +93,12 @@ public class PlatformServiceImpl implements PlatformService {
                         .flatMap(savedModel -> aiPlatformRepository.findById(savedModel.getRelPlatformId())
                                 .flatMap(platform -> {
                                     ChatPlatformEnum platformEnum = platform.getPlatform();
-                                    String cacheKey = AbstractChatPlatformStrategy.REDIS_MODEL_CACHE_KEY.apply(platformEnum);
+
+                                    RedisKey.Key cacheKey = RedisKey.chatModel(platformEnum, savedModel.getType());
 
                                     ChatModelVO vo = new ChatModelVO()
                                             .setId(savedModel.getId())
+                                            .setType(savedModel.getType())
                                             .setPlatform(platformEnum.getValue())
                                             .setPlatformName(platformEnum.getReasonPhrase())
                                             .setModel(savedModel.getCode())
@@ -105,7 +108,7 @@ public class PlatformServiceImpl implements PlatformService {
                                             .setSort(savedModel.getSort());
 
                                     return reactiveRedisTemplate.opsForHash()
-                                            .put(cacheKey, vo.getModel(), vo)
+                                            .put(cacheKey.key(), vo.getModel(), vo)
                                             .thenReturn(savedModel);
                                 })))
                 .switchIfEmpty(Mono.error(new ApplicationException(

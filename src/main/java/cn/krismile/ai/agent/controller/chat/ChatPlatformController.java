@@ -1,5 +1,6 @@
 package cn.krismile.ai.agent.controller.chat;
 
+import cn.krismile.ai.agent.model.enumeration.chat.ChatModelTypeEnum;
 import cn.krismile.ai.agent.model.request.chat.ChatModelEditRequest;
 import cn.krismile.ai.agent.model.request.chat.ChatPlatformEditRequest;
 import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
@@ -13,7 +14,7 @@ import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.List;
 
 /**
@@ -58,25 +59,29 @@ public class ChatPlatformController {
     /**
      * 查询聊天模型列表
      *
+     * @param type 聊天模型类型
      * @return 聊天模型列表
      * @since 1.0.0
      */
     @Operation(summary = "聊天模型列表")
-    @GetMapping("/model/chat/list")
-    public Mono<VO<List<ChatModelVO>>> listModels() {
-        return this.platformService.listModels().collectList().map(R::data);
+    @GetMapping("/model/{type}/list")
+    public Mono<VO<List<ChatModelVO>>> listChatModels(@PathVariable ChatModelTypeEnum type) {
+        return this.platformService.listModels(type).collectList().map(R::data);
     }
 
     /**
      * 编辑聊天模型
      *
+     * @param type    聊天模型类型
      * @param request 编辑请求参数
      * @return 是否编辑成功
      * @since 1.0.0
      */
     @Operation(summary = "编辑聊天模型")
-    @PutMapping("/model/chat/edit")
-    public Mono<VO<Boolean>> editModel(@RequestBody @Valid ChatModelEditRequest request) {
-        return this.platformService.editModel(request).map(R::data);
+    @PutMapping("/model/{type}/edit")
+    public Mono<VO<Boolean>> editModel(
+            @PathVariable ChatModelTypeEnum type,
+            @RequestBody @Valid ChatModelEditRequest request) {
+        return this.platformService.editModel(type, request).map(R::data);
     }
 }

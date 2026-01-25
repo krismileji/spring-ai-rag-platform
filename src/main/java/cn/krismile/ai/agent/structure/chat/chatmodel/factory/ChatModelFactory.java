@@ -19,9 +19,9 @@ public final class ChatModelFactory {
      * @return 阿里云平台模型构建器
      * @since 1.0.0
      */
-    public static PlatformModelBuilder builder(ChatPlatformEnum paltform) {
+    public static PlatformModelBuilder builder(ChatPlatformEnum platform) {
         return SpringUtils.getApplicationContext().getBeansOfType(PlatformModelBuilder.class).values().stream()
-                .filter(builder -> builder.platform() == paltform)
+                .filter(builder -> builder.platform() == platform)
                 .findFirst()
                 .orElseThrow(() -> new ApplicationException(ErrorCodeEnum.INVALID_USER_INPUT, "无法找到平台模型构建器"));
     }

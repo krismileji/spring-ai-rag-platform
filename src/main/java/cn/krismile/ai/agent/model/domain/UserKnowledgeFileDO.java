@@ -45,4 +45,9 @@ public class UserKnowledgeFileDO extends BaseIdDO {
      */
     private Long relKnowledgeId;
 
+    /**
+     * 嵌入模型
+     */
+    private Long relEmbeddingModelId;
+
 }

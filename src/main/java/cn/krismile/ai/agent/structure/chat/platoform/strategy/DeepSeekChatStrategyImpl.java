@@ -1,5 +1,6 @@
 package cn.krismile.ai.agent.structure.chat.platoform.strategy;
 
+import cn.krismile.ai.agent.model.enumeration.chat.ChatModelTypeEnum;
 import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
 import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
 import cn.krismile.ai.agent.structure.chat.platoform.ChatPlatformStrategy;
@@ -25,16 +26,21 @@ public class DeepSeekChatStrategyImpl extends AbstractChatPlatformStrategy imple
     }
 
     @Override
-    protected Flux<ChatModelVO> queryModels() {
+    protected Flux<ChatModelVO> queryModels(ChatModelTypeEnum type) {
+        if (type != ChatModelTypeEnum.CHAT) {
+            return Flux.empty();
+        }
         AtomicInteger modelIndex = new AtomicInteger(0);
         return Flux.just(
                 new ChatModelVO()
+                        .setType(ChatModelTypeEnum.CHAT)
                         .setPlatform(this.platform().getValue())
                         .setPlatformName(this.platform().getReasonPhrase())
                         .setModel("deepseek-chat")
                         .setModelName("DeepSeek-V3.2（非思考模式）")
                         .setSort(modelIndex.getAndIncrement()),
                 new ChatModelVO()
+                        .setType(ChatModelTypeEnum.CHAT)
                         .setPlatform(this.platform().getValue())
                         .setPlatformName(this.platform().getReasonPhrase())
                         .setModel("deepseek-reasoner")

@@ -1,5 +1,8 @@
 package cn.krismile.ai.agent.model.response.chat;
 
+import cn.krismile.ai.agent.model.domain.AiModelDO;
+import cn.krismile.ai.agent.model.domain.AiPlatformDO;
+import cn.krismile.ai.agent.model.enumeration.chat.ChatModelTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -26,6 +29,9 @@ public class ChatModelVO implements Serializable {
     @Schema(description = "平台名称")
     private String platformName;
 
+    @Schema(description = "模型类型")
+    private ChatModelTypeEnum type;
+
     @Schema(description = "模型")
     private String model;
 
@@ -41,4 +47,16 @@ public class ChatModelVO implements Serializable {
     @Schema(description = "排序")
     private Integer sort;
 
+    public static ChatModelVO from(AiPlatformDO platform, AiModelDO model) {
+        return new ChatModelVO()
+                .setId(model.getId())
+                .setPlatform(platform.getPlatform().getValue())
+                .setPlatformName(platform.getPlatform().getReasonPhrase())
+                .setType(model.getType())
+                .setModel(model.getCode())
+                .setModelName(model.getName())
+                .setDescription(model.getDescription())
+                .setEnabled(model.getEnabled())
+                .setSort(model.getSort());
+    }
 }

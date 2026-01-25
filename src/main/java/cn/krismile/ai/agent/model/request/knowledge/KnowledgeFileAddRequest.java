@@ -23,6 +23,9 @@ public record KnowledgeFileAddRequest(
         @Schema(description = "详情")
         @NotEmpty(message = "详情不能为空")
         @Valid
-        List<KnowLedgeFileDetailAddRequest> details
+        List<KnowLedgeFileDetailAddRequest> details,
+        @Schema(description = "嵌入模型")
+        @NotNull(message = "嵌入模型不能为空")
+        Long embeddingModelId
 ) {
 }

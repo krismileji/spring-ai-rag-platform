@@ -9,16 +9,9 @@ import cn.krismile.ai.agent.structure.chat.memory.MessageWindowChatMemory;
 import cn.krismile.ai.agent.structure.chat.memory.MysqlChatMemoryRepository;
 import cn.krismile.ai.agent.structure.rag.file.FileStorage;
 import cn.krismile.ai.agent.structure.rag.file.platform.LocalFileStrategyImpl;
-import io.micrometer.observation.ObservationRegistry;
-import io.qdrant.client.QdrantClient;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
-import org.springframework.ai.vectorstore.qdrant.QdrantVectorStore;
-import org.springframework.ai.vectorstore.qdrant.autoconfigure.QdrantVectorStoreProperties;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -87,32 +80,5 @@ public class ChatConfiguration {
         return ChatModelFactory.builder(ChatPlatformEnum.ALIYUN)
                 .embedding("text-embedding-v3", PlatformEmbeddingOptions.builder().dimensions(1024))
                 .block();
-    }
-
-    /**
-     * 向量存储
-     *
-     * @param dashscopeEmbeddingModel     嵌入模型
-     * @param properties                  配置属性
-     * @param qdrantClient                Qdrant 客户端
-     * @param observationRegistry         观察注册表
-     * @param customObservationConvention 自定义观察约定
-     * @param batchingStrategy            批处理策略
-     * @return 向量存储实例
-     * @since 1.0.0
-     */
-    @Bean
-    public QdrantVectorStore vectorStore(
-            EmbeddingModel dashscopeEmbeddingModel, QdrantVectorStoreProperties properties,
-            QdrantClient qdrantClient, ObjectProvider<ObservationRegistry> observationRegistry,
-            ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
-            BatchingStrategy batchingStrategy) {
-        return QdrantVectorStore.builder(qdrantClient, dashscopeEmbeddingModel)
-                .collectionName(properties.getCollectionName())
-                .initializeSchema(properties.isInitializeSchema())
-                .observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-                .customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
-                .batchingStrategy(batchingStrategy)
-                .build();
     }
 }
