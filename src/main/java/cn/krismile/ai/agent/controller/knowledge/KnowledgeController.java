@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import jakarta.validation.Valid;
+
 import java.util.List;
 
 /**
@@ -38,7 +39,7 @@ public class KnowledgeController {
     @Operation(summary = "校验名称")
     @GetMapping("/checkName")
     public Mono<VO<String>> checkName(@RequestParam String name) {
-        return knowledgeService.checkName(name).map(R::data);
+        return knowledgeService.checkName(name).map(R::data).defaultIfEmpty(R.data((String) null));
     }
 
     /**
@@ -63,6 +64,19 @@ public class KnowledgeController {
     @Operation(summary = "新增/编辑知识库")
     @PostMapping("/addEdit")
     public Mono<VO<Boolean>> addEdit(@RequestBody @Valid KnowledgeAddEditRequest request) {
-        return knowledgeService.addEdit(request).map(R::data);
+        return knowledgeService.addEdit(request).map(R::data).defaultIfEmpty(R.data(false));
+    }
+
+    /**
+     * 删除知识库
+     *
+     * @param id 知识库ID
+     * @return 是否删除成功
+     * @since 1.0.0
+     */
+    @Operation(summary = "删除知识库")
+    @DeleteMapping("/delete/{id}")
+    public Mono<VO<Boolean>> delete(@PathVariable Long id) {
+        return knowledgeService.delete(id).map(R::data).defaultIfEmpty(R.data(false));
     }
 }

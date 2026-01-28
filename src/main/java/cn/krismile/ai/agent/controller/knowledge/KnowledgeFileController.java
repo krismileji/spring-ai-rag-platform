@@ -113,6 +113,6 @@ public class KnowledgeFileController {
     })
     @DeleteMapping("/del/{fileId}")
     public Mono<VO<Boolean>> del(@PathVariable Long fileId) {
-        return this.fileService.del(fileId).map(R::data);
+        return this.fileService.del(fileId).map(R::data).defaultIfEmpty(R.data(false));
     }
 }

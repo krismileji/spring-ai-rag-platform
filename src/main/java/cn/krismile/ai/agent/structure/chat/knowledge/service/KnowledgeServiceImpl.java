@@ -1,9 +1,12 @@
 package cn.krismile.ai.agent.structure.chat.knowledge.service;
 
 import cn.krismile.ai.agent.configuration.security.context.SecurityUtils;
+import cn.krismile.ai.agent.model.domain.BaseIdDO;
 import cn.krismile.ai.agent.model.domain.UserKnowledgeDO;
 import cn.krismile.ai.agent.model.request.knowledge.KnowledgeAddEditRequest;
 import cn.krismile.ai.agent.model.response.knowledge.KnowledgeVO;
+import cn.krismile.ai.agent.repository.knowledge.UserKnowledgeFileDetailRepository;
+import cn.krismile.ai.agent.repository.knowledge.UserKnowledgeFileRepository;
 import cn.krismile.ai.agent.repository.knowledge.UserKnowledgeRepository;
 import host.springboot.framework3.core.enumeration.error.ErrorCodeEnum;
 import host.springboot.framework3.core.exception.ApplicationException;
@@ -12,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 /**
  * 创建知识库
@@ -24,6 +29,8 @@ import reactor.core.publisher.Mono;
 public class KnowledgeServiceImpl implements KnowledgeService {
 
     private final UserKnowledgeRepository userKnowledgeRepository;
+    private final UserKnowledgeFileRepository userKnowledgeFileRepository;
+    private final UserKnowledgeFileDetailRepository userKnowledgeFileDetailRepository;
 
     @Override
     public Flux<KnowledgeVO> list() {
@@ -68,5 +75,31 @@ public class KnowledgeServiceImpl implements KnowledgeService {
                     }
                 })
                 .thenReturn(true);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Mono<Boolean> delete(Long id) {
+        return SecurityUtils.getUserId()
+                .flatMap(userId -> userKnowledgeRepository.findByIdAndRelUserId(id, userId)
+                        .switchIfEmpty(Mono.error(new ApplicationException(ErrorCodeEnum.INVALID_USER_INPUT, "知识库不存在")))
+                        .flatMap(knowledge -> 
+                                userKnowledgeFileRepository.findByRelKnowledgeIdAndRelUserIdAndStatus(id, userId, null)
+                                        .collectList()
+                                        .flatMap(files -> {
+                                            if (files.isEmpty()) {
+                                                return userKnowledgeRepository.delete(knowledge);
+                                            }
+                                            List<Long> fileIds = files.stream().map(BaseIdDO::getId).toList();
+                                            return userKnowledgeFileDetailRepository.findByRelFileIdIn(fileIds)
+                                                    .flatMap(userKnowledgeFileDetailRepository::delete)
+                                                    .then(Flux.fromIterable(files)
+                                                            .flatMap(userKnowledgeFileRepository::delete)
+                                                            .then())
+                                                    .then(userKnowledgeRepository.delete(knowledge));
+                                        })
+                        )
+                        .thenReturn(true)
+                );
     }
 }

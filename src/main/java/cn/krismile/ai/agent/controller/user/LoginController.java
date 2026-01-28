@@ -37,6 +37,6 @@ public class LoginController {
     @Operation(summary = "根据用户名登录")
     @PostMapping("/username")
     public Mono<VO<String>> loginByUsername(@RequestBody LoginByUsernameRequest request) {
-        return loginService.loginByUsername(request).map(R::data);
+        return loginService.loginByUsername(request).map(R::data).defaultIfEmpty(R.data((String) null));
     }
 }

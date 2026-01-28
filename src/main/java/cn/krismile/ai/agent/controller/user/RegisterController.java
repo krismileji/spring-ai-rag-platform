@@ -47,6 +47,6 @@ public class RegisterController {
     @Operation(summary = "根据用户名注册")
     @PostMapping("/username")
     public Mono<VO<String>> registerByUsername(@RequestBody RegisterByUsernameRequest request) {
-        return registerService.registerByUsername(request).map(R::data);
+        return registerService.registerByUsername(request).map(R::data).defaultIfEmpty(R.data((String) null));
     }
 }

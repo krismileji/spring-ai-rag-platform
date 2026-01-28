@@ -53,7 +53,7 @@ public class ChatPlatformController {
     @Operation(summary = "编辑聊天平台")
     @PutMapping("/chat/edit")
     public Mono<VO<Boolean>> editPlatform(@RequestBody @Valid ChatPlatformEditRequest request) {
-        return this.platformService.editPlatform(request).map(R::data);
+        return this.platformService.editPlatform(request).map(R::data).defaultIfEmpty(R.data(false));
     }
 
     /**
@@ -82,6 +82,6 @@ public class ChatPlatformController {
     public Mono<VO<Boolean>> editModel(
             @PathVariable ChatModelTypeEnum type,
             @RequestBody @Valid ChatModelEditRequest request) {
-        return this.platformService.editModel(type, request).map(R::data);
+        return this.platformService.editModel(type, request).map(R::data).defaultIfEmpty(R.data(false));
     }
 }

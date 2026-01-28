@@ -39,4 +39,13 @@ public interface KnowledgeService {
      */
     Mono<Boolean> addEdit(KnowledgeAddEditRequest request);
 
+    /**
+     * 删除知识库
+     *
+     * @param id 知识库ID
+     * @return 是否删除成功
+     * @since 1.0.0
+     */
+    Mono<Boolean> delete(Long id);
+
 }
