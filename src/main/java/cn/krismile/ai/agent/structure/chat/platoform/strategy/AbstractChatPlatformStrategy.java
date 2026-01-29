@@ -6,7 +6,6 @@ import cn.krismile.ai.agent.constant.RedisKey;
 import cn.krismile.ai.agent.model.domain.AiModelDO;
 import cn.krismile.ai.agent.model.domain.AiPlatformDO;
 import cn.krismile.ai.agent.model.enumeration.chat.ChatModelTypeEnum;
-import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
 import cn.krismile.ai.agent.model.request.chat.ChatOptionsRequest;
 import cn.krismile.ai.agent.model.request.chat.ChatRequest;
 import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
@@ -37,7 +36,6 @@ import reactor.core.scheduler.Schedulers;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -61,16 +59,6 @@ public abstract class AbstractChatPlatformStrategy implements ChatPlatformStrate
     private AiModelRepository aiModelRepository;
     @Resource
     private QdrantVectorStoreBuilder qdrantVectorStoreBuilder;
-
-    public static final BiFunction<ChatPlatformEnum, ChatModelTypeEnum, String> REDIS_MODEL_CACHE_KEY =
-            (platform, type) ->
-                    new StringJoiner(":")
-                            .add("ai")
-                            .add("platform")
-                            .add("models")
-                            .add(platform.getValue())
-                            .add(type.getValue())
-                            .toString();
 
     /**
      * 查询模型
@@ -190,6 +178,7 @@ public abstract class AbstractChatPlatformStrategy implements ChatPlatformStrate
                 .switchIfEmpty(Mono.defer(() -> {
                     AiPlatformDO platform = new AiPlatformDO();
                     platform.setPlatform(this.platform());
+                    platform.setEnabled(false);
                     return aiPlatformRepository.save(platform);
                 }))
                 .flatMap(platform -> {

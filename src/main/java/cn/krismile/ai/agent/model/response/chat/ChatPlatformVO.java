@@ -32,15 +32,26 @@ public record ChatPlatformVO(
     /**
      * 构造方法
      *
-     * @param platfrom 平台
+     * @param platform 平台
      * @return ChatPlatformVO 实例
      * @since 1.0.0
      */
-    public static ChatPlatformVO of(AiPlatformDO platfrom) {
+    public static ChatPlatformVO of(AiPlatformDO platform) {
         return new ChatPlatformVO(
-                platfrom.getPlatform(),
-                StringUtils.isNotBlank(platfrom.getApiKey()),
-                platfrom.getDefaultOptions(),
-                BooleanUtils.isTrue(platfrom.getEnabled()));
+                platform.getPlatform(),
+                StringUtils.isNotBlank(platform.getApiKey()),
+                platform.getDefaultOptions(),
+                BooleanUtils.isTrue(platform.getEnabled()));
+    }
+
+    /**
+     * 构造默认平台信息
+     *
+     * @param platform 平台
+     * @return ChatPlatformVO 实例
+     * @since 1.0.0
+     */
+    public static ChatPlatformVO empty(ChatPlatformEnum platform) {
+        return new ChatPlatformVO(platform, false, null, false);
     }
 }

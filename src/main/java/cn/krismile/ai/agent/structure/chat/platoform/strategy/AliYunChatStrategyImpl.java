@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
+import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -130,5 +131,10 @@ public class AliYunChatStrategyImpl extends AbstractChatPlatformStrategy impleme
                   }
                 }
                 """.formatted(capability);
+    }
+
+    @Override
+    public @NonNull String logTag() {
+        return "AliYunStrategy";
     }
 }

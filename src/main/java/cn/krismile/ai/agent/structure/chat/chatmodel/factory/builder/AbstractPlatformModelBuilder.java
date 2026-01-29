@@ -47,20 +47,20 @@ public abstract class AbstractPlatformModelBuilder implements PlatformModelBuild
 
     @Override
     public Mono<ChatModel> chat(String model, PlatformChatOptions.Builder builder) {
-        return this.queryPlatformConfig().map(platformConfig -> {
+        return this.queryPlatformConfig().map(platform -> {
             PlatformChatOptions.Builder finalBuilder = Optional.ofNullable(builder).orElseGet(PlatformChatOptions::builder);
             finalBuilder.model(model);
-            finalBuilder.platform(platformConfig);
+            finalBuilder.platform(platform);
             return this.chat(finalBuilder.build());
         });
     }
 
     @Override
     public Mono<EmbeddingModel> embedding(String model, PlatformEmbeddingOptions.Builder builder) {
-        return this.queryPlatformConfig().map(platformConfig -> {
+        return this.queryPlatformConfig().map(platform -> {
             PlatformEmbeddingOptions.Builder finalBuilder = Optional.ofNullable(builder).orElseGet(PlatformEmbeddingOptions::builder);
             finalBuilder.model(model);
-            finalBuilder.platform(platformConfig);
+            finalBuilder.platform(platform);
             return this.embedding(finalBuilder.build());
         });
     }
@@ -72,7 +72,7 @@ public abstract class AbstractPlatformModelBuilder implements PlatformModelBuild
      * @since 1.0.0
      */
     protected Mono<ChatPlatformDTO> queryPlatformConfig() {
-        return this.aiPlatformRepository.findByPlatform(this.platform())
+        return this.aiPlatformRepository.findByPlatformAndEnabledIsTrue(this.platform())
                 .map(p -> ChatPlatformDTO.builder()
                         .platform(p.getPlatform())
                         .apiKey(AESEncryptionUtil.decrypt(p.getApiKey(), PlatformService.SECRET_KEY))

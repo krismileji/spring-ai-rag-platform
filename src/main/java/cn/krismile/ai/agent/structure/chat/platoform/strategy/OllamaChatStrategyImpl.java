@@ -4,7 +4,9 @@ import cn.krismile.ai.agent.model.enumeration.chat.ChatModelTypeEnum;
 import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
 import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
 import cn.krismile.ai.agent.structure.chat.platoform.ChatPlatformStrategy;
+import host.springboot.framework3.core.model.Pair;
 import jakarta.annotation.Resource;
+import org.jspecify.annotations.NonNull;
 import org.springframework.ai.model.ollama.autoconfigure.OllamaConnectionDetails;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.stereotype.Component;
@@ -53,6 +55,14 @@ public class OllamaChatStrategyImpl extends AbstractChatPlatformStrategy impleme
                         .setModelName(model.name())
                         .setEnabled(true)
                         .setSort(modelIndex.getAndIncrement())
-                );
+                ).onErrorResume(e -> {
+                    logInstance().error("访问 Ollama 模型列表失败", Pair.of("errorMessage", e.getLocalizedMessage()));
+                    return Flux.empty();
+                });
+    }
+
+    @Override
+    public @NonNull String logTag() {
+        return "OllamaStrategy";
     }
 }

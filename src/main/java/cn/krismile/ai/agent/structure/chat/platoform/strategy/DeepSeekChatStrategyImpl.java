@@ -4,6 +4,7 @@ import cn.krismile.ai.agent.model.enumeration.chat.ChatModelTypeEnum;
 import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
 import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
 import cn.krismile.ai.agent.structure.chat.platoform.ChatPlatformStrategy;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
@@ -47,5 +48,10 @@ public class DeepSeekChatStrategyImpl extends AbstractChatPlatformStrategy imple
                         .setModelName("DeepSeek-V3.2（思考模式）")
                         .setEnabled(true)
                         .setSort(modelIndex.getAndIncrement()));
+    }
+
+    @Override
+    public @NonNull String logTag() {
+        return "DeepSeekStrategy";
     }
 }

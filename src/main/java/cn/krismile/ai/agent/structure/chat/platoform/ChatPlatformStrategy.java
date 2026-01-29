@@ -5,6 +5,7 @@ import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
 import cn.krismile.ai.agent.model.request.chat.ChatRequest;
 import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
 import cn.krismile.ai.agent.model.response.chat.ChatResponse;
+import host.springboot.framework3.core.logging.LoggingComponent;
 import org.springframework.ai.vectorstore.VectorStore;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -15,7 +16,7 @@ import reactor.core.publisher.Mono;
  * @author JiYinchuan
  * @since 1.0.0
  */
-public interface ChatPlatformStrategy {
+public interface ChatPlatformStrategy extends LoggingComponent {
 
     /**
      * 获取平台枚举

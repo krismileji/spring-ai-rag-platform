@@ -1,7 +1,7 @@
 package cn.krismile.ai.agent.model.enumeration.chat;
 
-import cn.krismile.ai.agent.structure.chat.platoform.strategy.AliYunChatStrategyImpl;
 import cn.krismile.ai.agent.structure.chat.platoform.ChatPlatformStrategy;
+import cn.krismile.ai.agent.structure.chat.platoform.strategy.AliYunChatStrategyImpl;
 import cn.krismile.ai.agent.structure.chat.platoform.strategy.DeepSeekChatStrategyImpl;
 import cn.krismile.ai.agent.structure.chat.platoform.strategy.OllamaChatStrategyImpl;
 import host.springboot.framework3.core.enumeration.BaseEnum;
@@ -25,14 +25,14 @@ public enum ChatPlatformEnum implements BaseEnum<String> {
     OLLAMA("ollama", "Ollama", OllamaChatStrategyImpl.BEAN_NAME),
 
     /**
-     * Deepseek
-     */
-    DEEPSEEK("deepseek", "Deepseek", DeepSeekChatStrategyImpl.BEAN_NAME),
-
-    /**
      * 阿里云
      */
-    ALIYUN("aliyun", "阿里云", AliYunChatStrategyImpl.BEAN_NAME);
+    ALIYUN("aliyun", "阿里云", AliYunChatStrategyImpl.BEAN_NAME),
+
+    /**
+     * Deepseek
+     */
+    DEEPSEEK("deepseek", "Deepseek", DeepSeekChatStrategyImpl.BEAN_NAME);
 
     /**
      * 枚举值

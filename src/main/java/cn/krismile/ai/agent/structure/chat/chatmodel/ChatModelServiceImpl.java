@@ -23,7 +23,7 @@ public class ChatModelServiceImpl implements ChatModelService {
 
     @Override
     public Flux<ChatModelVO> listChatModels(ChatModelRequest query) {
-        return aiPlatformRepository.findByEnabled(true)
+        return aiPlatformRepository.findByEnabledIsTrue()
                 .flatMap(platform -> platform.getPlatform().strategy().listAllModels(ChatModelTypeEnum.CHAT))
                 .filter(model -> BooleanUtils.isTrue(model.getEnabled()));
     }

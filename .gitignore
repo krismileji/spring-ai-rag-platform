@@ -22,6 +22,7 @@ target/
 src/main/resources/application-primary.yml
 **/node_modules
 document/.vitepress/cache
+document/.vitepress/dist
 
 ### NetBeans ###
 /nbproject/private/

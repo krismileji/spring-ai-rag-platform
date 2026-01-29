@@ -1,10 +1,12 @@
 package cn.krismile.ai.agent.structure.chat.platoform.service;
 
 import cn.krismile.ai.agent.model.enumeration.chat.ChatModelTypeEnum;
+import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
 import cn.krismile.ai.agent.model.request.chat.ChatModelEditRequest;
 import cn.krismile.ai.agent.model.request.chat.ChatPlatformEditRequest;
 import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
 import cn.krismile.ai.agent.model.response.chat.ChatPlatformVO;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -31,11 +33,12 @@ public interface PlatformService {
     /**
      * 模型列表
      *
+     * @param platform 平台
      * @param type 模型类型
      * @return 模型列表
      * @since 1.0.0
      */
-    Flux<ChatModelVO> listModels(ChatModelTypeEnum type);
+    Flux<ChatModelVO> listModels(@Nullable ChatPlatformEnum platform, ChatModelTypeEnum type);
 
     /**
      * 编辑平台

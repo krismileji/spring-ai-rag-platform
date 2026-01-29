@@ -14,6 +14,7 @@ import cn.krismile.ai.agent.repository.platform.AiPlatformRepository;
 import cn.krismile.ai.agent.util.AESEncryptionUtil;
 import host.springboot.framework3.core.enumeration.error.ErrorCodeEnum;
 import host.springboot.framework3.core.exception.ApplicationException;
+import jakarta.annotation.Nullable;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
@@ -21,8 +22,12 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * 平台服务实现
@@ -44,15 +49,22 @@ public class PlatformServiceImpl implements PlatformService {
     public Mono<List<ChatPlatformVO>> listPlatforms() {
         return aiPlatformRepository.findAll()
                 .collectList()
-                .map(platforms -> platforms.stream()
-                        .map(ChatPlatformVO::of)
-                        .toList());
+                .map(platforms -> {
+                    Map<ChatPlatformEnum, AiPlatformDO> platformMap = platforms.stream()
+                            .collect(Collectors.toMap(AiPlatformDO::getPlatform, Function.identity()));
+                    return Arrays.stream(ChatPlatformEnum.values())
+                            .map(platform -> Optional.ofNullable(platformMap.get(platform))
+                                    .map(ChatPlatformVO::of)
+                                    .orElseGet(() -> ChatPlatformVO.empty(platform)))
+                            .toList();
+                });
     }
 
     @Override
-    public Flux<ChatModelVO> listModels(ChatModelTypeEnum type) {
-        return aiPlatformRepository.findByEnabled(true)
-                .flatMap(platform -> platform.getPlatform().strategy().listAllModels(type));
+    public Flux<ChatModelVO> listModels(@Nullable ChatPlatformEnum platform, ChatModelTypeEnum type) {
+        Flux<ChatPlatformEnum> platforms = Optional.ofNullable(platform).map(Flux::just)
+                .orElseGet(() -> aiPlatformRepository.findByEnabledIsTrue().map(AiPlatformDO::getPlatform));
+        return platforms.flatMap(p -> p.strategy().listAllModels(type));
     }
 
     @Override

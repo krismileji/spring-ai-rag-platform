@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.relational.core.mapping.Table;
 
 /**
@@ -29,7 +30,7 @@ public class AiPlatformDO extends BaseIdDO {
     /**
      * ApiKey
      */
-    private String apiKey;
+    private @Nullable String apiKey;
 
     /**
      * 默认配置

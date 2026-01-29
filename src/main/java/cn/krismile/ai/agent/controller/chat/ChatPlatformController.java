@@ -1,6 +1,7 @@
 package cn.krismile.ai.agent.controller.chat;
 
 import cn.krismile.ai.agent.model.enumeration.chat.ChatModelTypeEnum;
+import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
 import cn.krismile.ai.agent.model.request.chat.ChatModelEditRequest;
 import cn.krismile.ai.agent.model.request.chat.ChatPlatformEditRequest;
 import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
@@ -11,10 +12,10 @@ import host.springboot.framework3.core.response.vo.VO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
-import jakarta.validation.Valid;
 import java.util.List;
 
 /**
@@ -59,14 +60,17 @@ public class ChatPlatformController {
     /**
      * 查询聊天模型列表
      *
+     * @param platform 聊天平台
      * @param type 聊天模型类型
      * @return 聊天模型列表
      * @since 1.0.0
      */
     @Operation(summary = "聊天模型列表")
     @GetMapping("/model/{type}/list")
-    public Mono<VO<List<ChatModelVO>>> listChatModels(@PathVariable ChatModelTypeEnum type) {
-        return this.platformService.listModels(type).collectList().map(R::data);
+    public Mono<VO<List<ChatModelVO>>> listChatModels(
+            @RequestParam(required = false) ChatPlatformEnum platform,
+            @PathVariable ChatModelTypeEnum type) {
+        return this.platformService.listModels(platform, type).collectList().map(R::data);
     }
 
     /**

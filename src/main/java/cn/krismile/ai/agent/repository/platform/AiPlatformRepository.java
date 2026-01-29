@@ -18,6 +18,8 @@ public interface AiPlatformRepository extends R2dbcRepository<AiPlatformDO, Long
 
     Mono<AiPlatformDO> findByPlatform(ChatPlatformEnum platform);
 
-    Flux<AiPlatformDO> findByEnabled(Boolean enabled);
+    Flux<AiPlatformDO> findByEnabledIsTrue();
+
+    Mono<AiPlatformDO> findByPlatformAndEnabledIsTrue(ChatPlatformEnum platform);
 
 }
