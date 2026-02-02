@@ -1,132 +1,283 @@
+---
+outline: deep
+---
+
 # API 接口文档
 
-本项目集成了 **Knife4j + Springdoc**，提供可视化的 Swagger 接口文档和在线调试能力。以下内容基于当前代码（最近一次提交）整理，便于前后端联调与集成。
+## 快速导航
 
-## 1. 在线文档入口
+项目提供了 **Knife4j** 可视化接口文档，访问地址：`http://localhost:10001/doc.html`
 
-- **服务端口**: `10001`（见 `application.yml` 中 `server.port`）
-- **Swagger/Knife4j UI**: 打开浏览器访问：
-  - `http://localhost:10001/doc.html`
+> 💡 **新手提示**：Knife4j 是一个增强版的 Swagger 文档工具，可以在浏览器中直接测试接口，无需安装额外工具。
 
-接口的分组、入参与出参说明以在线文档为准，本文档主要对重要业务接口进行归纳和补充说明。
+## 如何使用接口
 
-## 2. 认证与通用约定
+### 第一步：理解认证方式
 
-- **鉴权方式**: 统一使用 **JWT**，登录成功后后端返回 `token`，后续接口通过请求头传递：
-  - `Authorization: Bearer <token>`
-- **公共前缀**: 当前接口未统一前缀，均以控制器上的 `@RequestMapping` 为准，例如：`/login`、`/chat`、`/knowledge` 等。
-- **公开接口（无需登录）**（见 `SecurityConfiguration`）:
-  - `/login/**`, `/register/**`
-  - `/actuator/**`, `/favicon.ico`
-  - `/doc.html`, `/webjars/**`, `/v3/api-docs/**`
-  - `/conversation/generate`
-  - `/platform/model/**`
-  - `/chat/message`
-- **其余接口** 默认需要携带有效的 JWT Token 才能访问。
+大部分接口需要登录后才能使用，系统采用 **JWT Token** 认证：
 
-## 3. 接口分组概览
+```mermaid
+graph LR
+    A[调用登录接口] --> B[获得 Token]
+    B --> C[后续请求携带 Token]
+    C --> D[访问其他接口]
+```
 
-### 3.1 用户认证（Auth）
+**简单理解**：
+- Token 就像一张"通行证"，登录成功后系统会给你
+- 之后每次请求都要带上这张"通行证"
+- 在请求头中添加：`Authorization: Bearer <你的token>`
 
-- **POST `/login/username`**
-  - 功能：根据用户名登录，返回 JWT token。
-  - 请求体：`LoginByUsernameRequest`
-  - 说明：登录成功后请保存返回的 token，并在后续请求中放入 `Authorization` 头。
+### 第二步：了解哪些接口不需要登录
 
-- **GET `/register/checkUsername`**
-  - 功能：校验用户名是否已注册。
-  - 查询参数：`username` 用户名。
+以下接口是公开的，无需 Token：
 
-- **POST `/register/username`**
-  - 功能：根据用户名注册账号。
-  - 请求体：`RegisterByUsernameRequest`
+| 接口路径 | 用途 |
+|---------|------|
+| `/login/**` | 用户登录 |
+| `/register/**` | 用户注册 |
+| `/conversation/generate` | 生成会话ID |
+| `/platform/model/**` | 查询可用模型 |
+| `/chat/message` | 发起聊天 |
+| `/doc.html` | API 文档页面 |
 
-### 3.2 对话与会话管理（Chat & Conversation）
+> ⚠️ **注意**：`/chat/message` 虽然无需登录，但生产环境建议限制访问。
 
-- **POST `/conversation/generate`**
-  - 功能：生成一个新的会话 ID。
-  - 返回：`VO<String>`，内容为会话 ID。
-  - 是否鉴权：**无需登录**。
+## 三大核心功能模块
 
-- **PUT `/conversation/verify`**
-  - 功能：验证会话 ID 是否有效。
-  - 请求体：`String` 类型的会话 ID。
-  - 返回：`VO<Boolean>`。
+### 👤 模块一：用户认证
 
-- **POST `/chat/message`**
-  - 功能：发起一次聊天对话，支持 SSE 流式返回。
-  - 请求体：`ChatRequest`，关键字段：
-    - `platform`: 聊天平台枚举 `ChatPlatformEnum`（如：`ALIYUN`、`DEEPSEEK`、`OLLAMA` 等）。
-    - `model`: 具体模型编码（如某个平台下的聊天模型 code）。
-    - `conversationId`: 会话 ID（建议通过 `/conversation/generate` 获取）。
-    - `message`: 用户输入的问题/消息。
-    - `knowledgeType`: 可选，`ChatKnowledgeTypeEnum`，为空则不启用知识库 RAG。
-    - `options`: 可选，对话参数（温度、最大 Token 等）。
-  - 响应：`text/event-stream`，数据为 `ChatResponse` 流。
-  - 是否鉴权：**无需登录**（当前安全配置下）。
+#### 1. 用户注册
 
-- **GET `/chat/history/conversations`**
-  - 功能：查询当前用户的会话列表。
-  - 返回：`VO<List<ChatConversationVO>>`。
+**步骤 1：检查用户名是否可用**
 
-- **GET `/chat/history/memories`**
-  - 功能：查询某个会话下的聊天记录。
-  - 查询参数：`conversationId` 会话 ID。
-  - 返回：`VO<List<ChatMemoryVO>>`。
+```http
+GET /register/checkUsername?username=zhangsan
+```
 
-- **DELETE `/chat/history/conversation/{conversationId}`**
-  - 功能：删除指定会话及其历史记录。
-  - 路径参数：`conversationId` 会话 ID。
-  - 返回：`VO<Boolean>`。
+**返回示例**：
+```json
+{
+  "errorCode": "00000",
+  "data": true,  // true 表示可用，false 表示已被注册
+  "userTip": "用户名可用"
+}
+```
 
-### 3.3 知识库管理（Knowledge）
+**步骤 2：注册账号**
 
-- **GET `/knowledge/checkName`**
-  - 功能：校验知识库名称是否可用。
-  - 查询参数：`name` 知识库名称。
+```http
+POST /register/username
+Content-Type: application/json
 
-- **GET `/knowledge/list`**
-  - 功能：查询当前用户的知识库列表。
-  - 返回：`VO<List<KnowledgeVO>>`。
+{
+  "username": "zhangsan",
+  "password": "123456"
+}
+```
 
-- **POST `/knowledge/addEdit`**
-  - 功能：新增或编辑知识库。
-  - 请求体：`KnowledgeAddEditRequest`。
+#### 2. 用户登录
 
-### 3.4 知识库文件管理（Knowledge File）
+```http
+POST /login/username
+Content-Type: application/json
 
-> 路径前缀：`/knowledge/file`
+{
+  "username": "zhangsan",
+  "password": "123456"
+}
+```
 
-- **GET `/knowledge/file/list/{knowledgeId}`**
-  - 功能：查询指定知识库下的文件列表。
-  - 路径参数：`knowledgeId` 知识库 ID。
-  - 返回：`VO<List<KnowledgeFileVO>>`，其中包含关联的嵌入模型信息 `relEmbeddingModel`。
+**返回示例**：
+```json
+{
+  "errorCode": "00000",
+  "data": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",  // 这就是 Token
+  "userTip": "登录成功"
+}
+```
 
-- **GET `/knowledge/file/listFileDetails/{fileId}`**
-  - 功能：查询单个文件的切片详情。
-  - 路径参数：`fileId` 文件 ID。
-  - 返回：`VO<List<KnowledgeFileDetailVO>>`。
+> 💡 **提示**：登录成功后，请保存 `data` 字段中的 Token，后续所有需要认证的接口都要带上它。
 
-- **POST `/knowledge/file/uploadFile/{knowledgeId}`**
-  - 功能：上传原始文档文件并进行解析与切片。
-  - 路径参数：`knowledgeId` 知识库 ID。
-  - 请求体：`multipart/form-data`，字段 `files`（`Flux<FilePart>`）。
-  - 返回：`VO<List<KnowledgeFileUploadVO>>`，包含解析后的片段信息。
+---
 
-- **PUT `/knowledge/file/add/{knowledgeId}`**
-  - 功能：基于前一步解析结果，保存文件及其切片，并写入向量库。
-  - 路径参数：`knowledgeId` 知识库 ID。
-  - 请求体：`Flux<KnowledgeFileAddRequest>`，关键字段：
-    - `id`: 文件 ID（上传接口返回）。
-    - `description`: 文件描述。
-    - `details`: 片段列表 `KnowLedgeFileDetailAddRequest`（可包含新增或编辑）。
-    - `embeddingModelId`: 选择的 **嵌入模型 ID**，用于构建向量存储并写入 Qdrant。
-  - 返回：`VO<List<Long>>`，保存成功的文件 ID 列表或失败的详情 ID 列表（视实现而定）。
+### 💬 模块二：AI 聊天功能
 
-- **DELETE `/knowledge/file/del/{fileId}`**
-  - 功能：删除文件及其在向量库中的所有文档。
-  - 路径参数：`fileId` 文件 ID。
-  - 返回：`VO<Boolean>`。
+#### 1. 开启一次对话（完整流程）
+
+**第一步：获取会话 ID**
+
+```http
+POST /conversation/generate
+```
+
+**返回**：
+```json
+{
+  "errorCode": "00000",
+  "data": "1234567890123456789"  // 这就是会话 ID
+}
+```
+
+> 💡 **什么是会话 ID**？就像聊天窗口的唯一编号，同一个窗口内的对话都用这个 ID。
+
+**第二步：发送消息**
+
+```http
+POST /chat/message
+Content-Type: application/json
+Authorization: Bearer <你的token>
+
+{
+  "platform": "ALIYUN",                  // 使用哪个 AI 平台（阿里云/DeepSeek/Ollama）
+  "model": "qwen-plus",                  // 具体模型
+  "conversationId": "1234567890123456789", // 上一步获取的 ID
+  "message": "你好，请介绍一下 RAG 技术",  // 用户问题
+  "knowledgeType": null,                 // 不使用知识库就填 null
+  "options": {
+    "temperature": 0.7                   // 创造性参数（0-1，越大越发散）
+  }
+}
+```
+
+**响应方式**：流式返回（SSE）
+
+系统会像打字机一样逐字返回结果，每一块数据格式：
+
+```text
+data: {"content":"你好"}
+data: {"content":"，RAG"}
+data: {"content":" 技术是..."}
+```
+
+#### 2. 查看历史聊天记录
+
+**查看所有会话列表**：
+
+```http
+GET /chat/history/conversations
+Authorization: Bearer <你的token>
+```
+
+**返回示例**：
+```json
+{
+  "errorCode": "00000",
+  "data": [
+    {
+      "conversationId": "1234567890123456789",
+      "title": "关于 RAG 技术的讨论",
+      "createTime": "2024-01-01 10:00:00"
+    }
+  ]
+}
+```
+
+**查看某个会话的详细记录**：
+
+```http
+GET /chat/history/memories?conversationId=1234567890123456789
+Authorization: Bearer <你的token>
+```
+
+#### 3. 删除会话
+
+```http
+DELETE /chat/history/conversation/1234567890123456789
+Authorization: Bearer <你的token>
+```
+
+---
+
+### 📚 模块三：知识库管理
+
+#### 1. 创建知识库
+
+**步骤 1：检查名称是否可用**
+
+```http
+GET /knowledge/checkName?name=我的知识库
+Authorization: Bearer <你的token>
+```
+
+**步骤 2：创建或编辑**
+
+```http
+POST /knowledge/addEdit
+Authorization: Bearer <你的token>
+Content-Type: application/json
+
+{
+  "name": "我的知识库",
+  "description": "存放公司技术文档"
+}
+```
+
+#### 2. 上传文档到知识库（完整流程）
+
+**第一步：上传文件**
+
+```http
+POST /knowledge/file/uploadFile/123
+Authorization: Bearer <你的token>
+Content-Type: multipart/form-data
+
+--boundary
+Content-Disposition: form-data; name="files"; filename="document.pdf"
+
+[文件内容]
+```
+
+**返回：解析后的分段**
+```json
+{
+  "errorCode": "00000",
+  "data": [
+    {
+      "id": "file_001",
+      "fileName": "document.pdf",
+      "details": [  // 文档已经被切分成多个小段
+        { "id": "detail_001", "content": "第一段内容..." },
+        { "id": "detail_002", "content": "第二段内容..." }
+      ]
+    }
+  ]
+}
+```
+
+> 💡 **为什么要切分**？因为 AI 一次只能处理有限的字符，把长文档切成小段更容易检索。
+
+**第二步：保存到向量库**
+
+```http
+PUT /knowledge/file/add/123
+Authorization: Bearer <你的token>
+Content-Type: application/json
+
+{
+  "id": "file_001",
+  "description": "公司产品说明书",
+  "embeddingModelId": 5,  // 选择用哪个模型将文本转换为向量
+  "details": [
+    { "id": "detail_001", "content": "第一段内容..." },
+    { "id": "detail_002", "content": "第二段内容..." }
+  ]
+}
+```
+
+#### 3. 查看知识库中的文件
+
+```http
+GET /knowledge/file/list/123
+Authorization: Bearer <你的token>
+```
+
+#### 4. 删除文件
+
+```http
+DELETE /knowledge/file/del/file_001
+Authorization: Bearer <你的token>
+```
 
 ### 3.5 模型与平台管理（Model & Platform）
 

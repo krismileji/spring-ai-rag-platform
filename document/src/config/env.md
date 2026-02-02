@@ -1,3 +1,7 @@
+---
+outline: deep
+---
+
 # 开发环境配置指南
 
 为了顺利运行 **Spring AI RAG Platform**，请确保您的开发环境满足以下要求。
@@ -131,3 +135,108 @@ project:
    ```
 
 5. 浏览器访问 `http://localhost:10001/doc.html` 查看在线接口文档，或访问首页应用。
+
+## 6. 生产环境部署建议
+
+### 6.1 Docker Compose 部署（推荐）
+
+使用 Docker Compose 可以一键启动所有依赖服务：
+
+```yaml
+version: '3.8'
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: yourpassword
+      MYSQL_DATABASE: ai_agent
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-mysql.sql:/docker-entrypoint-initdb.d/init.sql
+  
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+  
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+volumes:
+  mysql_data:
+  qdrant_data:
+```
+
+### 6.2 Nginx 反向代理配置
+
+生产环境建议使用 Nginx 统一前后端：
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    
+    # 前端静态资源
+    location / {
+        root /var/www/website/dist;
+        try_files $uri $uri/ /index.html;
+    }
+    
+    # 后端 API 代理
+    location /api/ {
+        proxy_pass http://localhost:10001/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        
+        # SSE 流式响应配置
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 300s;
+    }
+}
+```
+
+### 6.3 生产环境优化
+
+1. **数据库连接池**：
+   ```yaml
+   spring:
+     r2dbc:
+       pool:
+         initial-size: 10
+         max-size: 50
+         max-idle-time: 30m
+   ```
+
+2. **JVM 参数优化**：
+   ```bash
+   java -Xms2g -Xmx4g -XX:+UseG1GC \
+        -XX:MaxGCPauseMillis=200 \
+        -jar spring-ai-rag-platform.jar
+   ```
+
+3. **安全配置**：
+   - 修改 JWT secret-key 为高强度密钥
+   - 修改会话 sign-key
+   - 限制 `/platform/model/**` 接口访问权限
+
+4. **日志配置**：
+   ```yaml
+   logging:
+     level:
+       root: INFO
+       cn.krismile.ai.agent: DEBUG
+     file:
+       name: /var/log/ai-agent/application.log
+   ```
