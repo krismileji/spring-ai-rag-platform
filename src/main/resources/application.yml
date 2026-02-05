@@ -21,6 +21,20 @@ spring:
 logging:
   level:
     'cn.krismile.ai.agent': debug
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  endpoint:
+    health:
+      show-details: always
+
 krismile:
   web:
     xss:

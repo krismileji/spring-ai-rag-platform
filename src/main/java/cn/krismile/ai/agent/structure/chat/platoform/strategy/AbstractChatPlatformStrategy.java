@@ -17,6 +17,7 @@ import cn.krismile.ai.agent.structure.chat.chatmodel.factory.options.PlatformCha
 import cn.krismile.ai.agent.structure.chat.memory.MessageWindowChatMemory;
 import cn.krismile.ai.agent.structure.chat.memory.MysqlChatMemoryRepository;
 import cn.krismile.ai.agent.structure.chat.platoform.ChatPlatformStrategy;
+import cn.krismile.ai.agent.structure.chat.tool.WebVisitTool;
 import cn.krismile.ai.agent.structure.rag.embedding.builder.QdrantVectorStoreBuilder;
 import cn.krismile.ai.agent.util.ObjectMapperUtils;
 import jakarta.annotation.Resource;
@@ -59,6 +60,8 @@ public abstract class AbstractChatPlatformStrategy implements ChatPlatformStrate
     private AiModelRepository aiModelRepository;
     @Resource
     private QdrantVectorStoreBuilder qdrantVectorStoreBuilder;
+    @Resource
+    private WebVisitTool webVisitTool;
 
     /**
      * 查询模型
@@ -157,7 +160,8 @@ public abstract class AbstractChatPlatformStrategy implements ChatPlatformStrate
                                     ChatMemory.CONVERSATION_ID, request.getConversationId()))
                             .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory)
                                     .scheduler(BaseAdvisor.DEFAULT_SCHEDULER)
-                                    .build());
+                                    .build())
+                            .defaultTools(webVisitTool);
                     // 处理向量存储
                     return this.handleRagMemory(builder, request);
                 }));

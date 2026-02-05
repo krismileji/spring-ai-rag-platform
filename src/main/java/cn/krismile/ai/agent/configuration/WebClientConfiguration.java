@@ -27,6 +27,7 @@ public class WebClientConfiguration {
     public WebClientCustomizer webClientCustomizer() {
         return builder -> builder
                 .clientConnector(new ReactorClientHttpConnector(HttpClient.create()
+                        .followRedirect(true)
                         .responseTimeout(Duration.ofMinutes(1))))
                 .codecs(configurer -> configurer.defaultCodecs()
                         .maxInMemorySize(1024 * 1024 * 10));
