@@ -1,5 +1,7 @@
 package cn.krismile.ai.agent.structure.chat.chatmodel.factory.builder;
 
+import cn.krismile.ai.agent.model.enumeration.chat.ChatModelTypeEnum;
+import cn.krismile.ai.agent.repository.platform.AiModelRepository;
 import cn.krismile.ai.agent.repository.platform.AiPlatformRepository;
 import cn.krismile.ai.agent.structure.chat.chatmodel.factory.PlatformModelBuilder;
 import cn.krismile.ai.agent.structure.chat.chatmodel.factory.options.PlatformChatOptions;
@@ -24,6 +26,8 @@ public abstract class AbstractPlatformModelBuilder implements PlatformModelBuild
 
     @Resource
     private AiPlatformRepository aiPlatformRepository;
+    @Resource
+    private AiModelRepository aiModelRepository;
 
     /**
      * 创建聊天模型
@@ -47,12 +51,16 @@ public abstract class AbstractPlatformModelBuilder implements PlatformModelBuild
 
     @Override
     public Mono<ChatModel> chat(String model, PlatformChatOptions.Builder builder) {
-        return this.queryPlatformConfig().map(platform -> {
-            PlatformChatOptions.Builder finalBuilder = Optional.ofNullable(builder).orElseGet(PlatformChatOptions::builder);
-            finalBuilder.model(model);
-            finalBuilder.platform(platform);
-            return this.chat(finalBuilder.build());
-        });
+        return this.queryPlatformConfig().flatMap(platform -> this.aiModelRepository
+                .findByRelPlatformIdAndTypeAndCode(platform.getId(), ChatModelTypeEnum.CHAT, model)
+                .flatMap(dbModel -> {
+                    PlatformChatOptions.Builder finalBuilder = Optional.ofNullable(builder)
+                            .orElseGet(PlatformChatOptions::builder);
+                    finalBuilder.model(model);
+                    finalBuilder.platform(platform);
+                    finalBuilder.metaData(dbModel.getMetaData());
+                    return Mono.just(this.chat(finalBuilder.build()));
+                }));
     }
 
     @Override
@@ -74,6 +82,7 @@ public abstract class AbstractPlatformModelBuilder implements PlatformModelBuild
     protected Mono<ChatPlatformDTO> queryPlatformConfig() {
         return this.aiPlatformRepository.findByPlatformAndEnabledIsTrue(this.platform())
                 .map(p -> ChatPlatformDTO.builder()
+                        .id(p.getId())
                         .platform(p.getPlatform())
                         .apiKey(AESEncryptionUtil.decrypt(p.getApiKey(), PlatformService.SECRET_KEY))
                         .build())

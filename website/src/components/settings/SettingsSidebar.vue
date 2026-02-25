@@ -1,7 +1,7 @@
 <template>
   <div class="settings-sidebar">
     <div class="sidebar-header">
-      <h2>设置</h2>
+      <h2>{{ t('settings.title') }}</h2>
     </div>
     <div class="sidebar-menu">
       <div
@@ -22,7 +22,10 @@
 
 <script setup lang="ts">
 import { Setting, Monitor, InfoFilled } from '@element-plus/icons-vue'
-import type { Component } from 'vue'
+import { computed, type Component } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface MenuItem {
   key: string
@@ -41,11 +44,11 @@ interface Emits {
 defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const menuItems: MenuItem[] = [
-  { key: 'ai', label: 'AI 服务商', icon: Monitor },
-  { key: 'general', label: '通用设置', icon: Setting },
-  { key: 'about', label: '关于', icon: InfoFilled },
-]
+const menuItems = computed<MenuItem[]>(() => [
+  { key: 'ai', label: t('settings.menu.ai_provider'), icon: Monitor },
+  { key: 'general', label: t('settings.menu.general'), icon: Setting },
+  { key: 'about', label: t('settings.menu.about'), icon: InfoFilled },
+])
 
 const handleTabChange = (key: string) => {
   emit('update:activeTab', key)

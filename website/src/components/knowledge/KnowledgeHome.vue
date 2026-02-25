@@ -1,14 +1,14 @@
 <template>
   <div class="home-view">
     <div class="home-header">
-      <h1>开始</h1>
+      <h1>{{ t('knowledge.home.title') }}</h1>
     </div>
     <div class="action-cards">
       <div class="action-card" @click="$emit('create-kb')">
         <div class="card-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
           <el-icon :size="32"><FolderAdd /></el-icon>
         </div>
-        <h3>创建知识库</h3>
+        <h3>{{ t('knowledge.home.create_kb') }}</h3>
       </div>
     </div>
   </div>
@@ -16,6 +16,9 @@
 
 <script setup lang="ts">
 import { FolderAdd } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 defineEmits<{
   (e: 'create-kb'): void

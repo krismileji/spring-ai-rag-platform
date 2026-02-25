@@ -4,15 +4,19 @@ import cn.krismile.ai.agent.util.ObjectMapperUtils;
 import host.springboot.framework3.core.enumeration.error.ErrorCodeEnum;
 import host.springboot.framework3.core.response.R;
 import host.springboot.framework3.core.response.vo.VO;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.server.ServerAuthenticationEntryPoint;
+import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 /**
  * 自定义认证入口点
@@ -23,7 +27,11 @@ import java.nio.charset.StandardCharsets;
  * @author JiYinchuan
  * @since 1.0.0
  */
+@Component
+@RequiredArgsConstructor
 public class CustomServerAuthenticationEntryPoint implements ServerAuthenticationEntryPoint {
+
+    private final MessageSource messageSource;
 
     @Override
     public Mono<Void> commence(ServerWebExchange exchange, AuthenticationException ex) {
@@ -31,7 +39,9 @@ public class CustomServerAuthenticationEntryPoint implements ServerAuthenticatio
         exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
         // 构建统一响应体
-        VO<?> result = R.fail(ErrorCodeEnum.ACCESS_UNAUTHORIZED, "请先登录");
+        Locale locale = exchange.getLocaleContext().getLocale();
+        String message = messageSource.getMessage("error.access.unauthorized", null, locale);
+        VO<?> result = R.fail(ErrorCodeEnum.ACCESS_UNAUTHORIZED, message);
         String body = ObjectMapperUtils.writeValueAsStringFailSafe(result);
         if (body == null) {
             body = "{\"code\":401,\"msg\":\"Unauthorized\",\"data\":null}";

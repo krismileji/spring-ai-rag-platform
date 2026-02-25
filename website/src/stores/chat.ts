@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   generateConversationId,
   sendChatMessage,
@@ -35,6 +36,7 @@ export interface Session {
 }
 
 export const useChatStore = defineStore('chat', () => {
+  const { t } = useI18n()
   const sessions = ref<Session[]>([])
 
   const currentSessionId = ref<string>('')
@@ -100,7 +102,7 @@ export const useChatStore = defineStore('chat', () => {
       sessions.value = response.data.map((conv: ChatConversationVO) => ({
         id: conv.id,
         conversationId: conv.id,
-        title: conv.content || `会话 ${conv.id}`,
+        title: conv.content || `${t('chat.session.title_prefix')} ${conv.id}`,
         messages: [],
         lastMessage: conv.content,
         lastTime: new Date(conv.createTime).getTime(),
@@ -177,9 +179,9 @@ export const useChatStore = defineStore('chat', () => {
       const newSession: Session = {
         id: Date.now().toString(),
         conversationId, // 保存后端返回的会话ID
-        title: `新对话 ${sessions.value.length + 1}`,
+        title: `${t('chat.session.new_prefix')} ${sessions.value.length + 1}`,
         messages: [],
-        lastMessage: '开始聊天吧',
+        lastMessage: t('chat.session.start_chat'),
         lastTime: Date.now(),
       }
       sessions.value.unshift(newSession)
@@ -245,17 +247,17 @@ export const useChatStore = defineStore('chat', () => {
   // 发送消息
   const sendMessage = async (content: string, enableThinking: boolean = false) => {
     if (!currentSession.value) {
-      ElMessage.warning('请先选择或创建会话')
+      ElMessage.warning(t('chat.message.select_session_warning'))
       return
     }
 
     if (!currentSession.value.conversationId) {
-      ElMessage.error('会话ID不存在')
+      ElMessage.error(t('chat.message.session_id_missing'))
       return
     }
 
     if (!selectedModel.value.platform || !selectedModel.value.model) {
-      ElMessage.warning('请先选择聊天模型')
+      ElMessage.warning(t('chat.message.select_model_warning'))
       return
     }
 

@@ -21,6 +21,7 @@ import cn.krismile.ai.agent.structure.chat.tool.WebVisitTool;
 import cn.krismile.ai.agent.structure.rag.embedding.builder.QdrantVectorStoreBuilder;
 import cn.krismile.ai.agent.util.ObjectMapperUtils;
 import jakarta.annotation.Resource;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.NonNull;
 import org.springframework.ai.chat.client.ChatClient;
@@ -93,6 +94,9 @@ public abstract class AbstractChatPlatformStrategy implements ChatPlatformStrate
                         .options(request.getOptions().toChatOptions(request.getPlatform()))
                         .stream()
                         .chatResponse()
+                        .doOnError(ex -> {
+                            logInstance().error("聊天失败", ex);
+                        })
                         .subscribeOn(Schedulers.boundedElastic()))
                 .filter(Objects::nonNull)
                 .mapNotNull(response -> {
@@ -125,12 +129,14 @@ public abstract class AbstractChatPlatformStrategy implements ChatPlatformStrate
                 .map(obj -> ObjectMapperUtils.convertValue(obj, ChatModelVO.class))
                 .switchIfEmpty(Flux.defer(() -> this.queryModels(type)
                         .collectList()
-                        .flatMap(models -> {
+                        .flatMapMany(models -> {
                             if (models.isEmpty()) return Mono.empty();
-                            return this.persistentModel(type, models).flatMap(savedModels ->
-                                    this.cacheModel(cacheKey, savedModels).thenReturn(savedModels));
+                            return this.persistentModel(type, models)
+                                    .collectList()
+                                    .flatMap(savedModels -> this.cacheModel(cacheKey, savedModels)
+                                            .then(Mono.just(savedModels)))
+                                    .flatMapMany(Flux::fromIterable);
                         })
-                        .flatMapMany(Flux::fromIterable)
                 ))
                 .sort(Comparator.comparingInt(ChatModelVO::getSort));
     }
@@ -175,8 +181,10 @@ public abstract class AbstractChatPlatformStrategy implements ChatPlatformStrate
      * @return 持久化后的模型列表
      * @since 1.0.0
      */
-    private Mono<List<ChatModelVO>> persistentModel(ChatModelTypeEnum type, List<ChatModelVO> models) {
-        if (models.isEmpty()) return Mono.just(List.of());
+    private Flux<ChatModelVO> persistentModel(ChatModelTypeEnum type, List<ChatModelVO> models) {
+        if (CollectionUtils.isEmpty(models)) {
+            return Flux.empty();
+        }
 
         return aiPlatformRepository.findByPlatform(this.platform())
                 .switchIfEmpty(Mono.defer(() -> {
@@ -185,40 +193,47 @@ public abstract class AbstractChatPlatformStrategy implements ChatPlatformStrate
                     platform.setEnabled(false);
                     return aiPlatformRepository.save(platform);
                 }))
-                .flatMap(platform -> {
+                .flatMapMany(platform -> {
                     Long platformId = platform.getId();
-                    List<String> codes = models.stream().map(ChatModelVO::getModel).toList();
+                    return aiModelRepository.findByRelPlatformIdAndType(platformId, type)
+                            .collectList()
+                            .flatMapMany(dbModels -> {
+                                Map<String, AiModelDO> dbModelMap = dbModels.stream()
+                                        .collect(Collectors.toMap(AiModelDO::getCode, Function.identity()));
 
-                    return aiModelRepository.findByRelPlatformIdAndTypeAndCodeIn(platformId, type, codes)
-                            .collectMap(AiModelDO::getCode, Function.identity())
-                            .flatMap(modelMap -> {
-                                List<AiModelDO> addModels = models.stream()
-                                        .peek(model -> {
-                                            AiModelDO dbModel = modelMap.get(model.getModel());
-                                            if (dbModel != null) {
-                                                model.setId(dbModel.getId());
-                                                model.setEnabled(dbModel.getEnabled());
-                                            }
-                                        })
-                                        .filter(model -> !modelMap.containsKey(model.getModel()))
-                                        .map(model -> {
-                                            AiModelDO m = new AiModelDO();
-                                            m.setType(model.getType());
-                                            m.setCode(model.getModel());
-                                            m.setName(model.getModelName());
-                                            m.setDescription(model.getDescription());
-                                            m.setEnabled(true);
-                                            m.setSort(model.getSort());
-                                            m.setRelPlatformId(platformId);
-                                            return m;
-                                        })
+                                List<AiModelDO> toSave = new ArrayList<>();
+                                Set<String> inputCodes = new HashSet<>();
+
+                                for (ChatModelVO model : models) {
+                                    String code = model.getModel();
+                                    inputCodes.add(code);
+                                    AiModelDO dbModel = dbModelMap.get(code);
+                                    if (dbModel == null) {
+                                        dbModel = new AiModelDO();
+                                        dbModel.setRelPlatformId(platformId);
+                                        dbModel.setType(type);
+                                        dbModel.setCode(code);
+                                        dbModel.setEnabled(true);
+                                    }
+                                    dbModel.setName(model.getModelName());
+                                    dbModel.setDescription(model.getDescription());
+                                    dbModel.setMetaData(model.getMetaData());
+                                    dbModel.setSort(model.getSort());
+                                    toSave.add(dbModel);
+                                }
+
+                                List<Long> toDelete = dbModels.stream()
+                                        .filter(m -> !inputCodes.contains(m.getCode()))
+                                        .map(AiModelDO::getId)
                                         .toList();
 
-                                Mono<List<AiModelDO>> saveMono = addModels.isEmpty() ?
-                                        Mono.just(Collections.emptyList()) :
-                                        aiModelRepository.saveAll(addModels).collectList();
+                                Mono<Boolean> deleteMono = CollectionUtils.isNotEmpty(toDelete)
+                                        ? aiModelRepository.removeByIdIn(toDelete)
+                                        : Mono.just(true);
 
-                                return saveMono.thenReturn(models);
+                                return deleteMono.thenMany(aiModelRepository.saveAll(toSave)
+                                        .map(savedModel -> ChatModelVO.from(platform, savedModel))
+                                );
                             });
                 });
     }

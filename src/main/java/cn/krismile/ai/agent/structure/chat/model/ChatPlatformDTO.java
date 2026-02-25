@@ -18,6 +18,11 @@ import org.apache.commons.lang3.StringUtils;
 public class ChatPlatformDTO {
 
     /**
+     * 聊天平台ID
+     */
+    private Long id;
+
+    /**
      * 聊天平台
      */
     private ChatPlatformEnum platform;

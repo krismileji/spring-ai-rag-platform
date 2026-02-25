@@ -17,12 +17,12 @@ public enum DictTypeEnum implements BaseEnum<String> {
     /**
      * 聊天平台
      */
-    CHAT_PLATFORM("CHAT_PLATFORM", "聊天平台"),
+    CHAT_PLATFORM("CHAT_PLATFORM", "enum.dict_type.chat_platform"),
 
     /**
      * 聊天模型
      */
-    CHAT_MODEL("CHAT_MODEL", "聊天模型");
+    CHAT_MODEL("CHAT_MODEL", "enum.dict_type.chat_model");
 
     /**
      * 枚举值

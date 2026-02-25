@@ -1,8 +1,11 @@
 import { ElMessage } from 'element-plus'
 import type { VO } from './model'
 import apiClient from './api-client'
+import i18n from '../i18n'
 
-export interface ChatModelVO {
+export type ModelType = 'CHAT' | 'EMBEDDING'
+
+export interface ModelVO {
   id: string
   platform: string
   platformName: string
@@ -13,32 +16,11 @@ export interface ChatModelVO {
   enabled?: boolean
 }
 
-export interface ChatModelQuery {
+export interface ModelQuery {
   platform?: string
 }
 
-export interface ChatModelEditRequest {
-  id: string
-  model: string
-  enabled: boolean
-}
-
-export interface EmbeddingModelVO {
-  id: string
-  platform: string
-  platformName: string
-  model: string
-  modelName: string
-  description: string
-  sort: number
-  enabled?: boolean
-}
-
-export interface EmbeddingModelQuery {
-  platform?: string
-}
-
-export interface EmbeddingModelEditRequest {
+export interface ModelEditRequest {
   id: string
   model: string
   enabled: boolean
@@ -63,31 +45,24 @@ export interface ChatStreamCallbacks {
 }
 
 /**
- * 获取聊天模型列表
+ * 获取模型列表
  */
-export const getChatModelList = (query?: ChatModelQuery): Promise<VO<ChatModelVO[]>> => {
-  return apiClient.get('/platform/model/CHAT/list', { params: query || {} })
+export const getModelList = (type: ModelType, query?: ModelQuery): Promise<VO<ModelVO[]>> => {
+  return apiClient.get(`/platform/model/${type}/list`, { params: query || {} })
 }
 
 /**
- * 编辑聊天模型
+ * 编辑模型
  */
-export const editChatModel = (request: ChatModelEditRequest): Promise<VO<boolean>> => {
-  return apiClient.put('/platform/model/CHAT/edit', request)
+export const editModel = (type: ModelType, request: ModelEditRequest): Promise<VO<boolean>> => {
+  return apiClient.put(`/platform/model/${type}/edit`, request)
 }
 
 /**
- * 获取嵌入模型列表
+ * 刷新模型缓存
  */
-export const getEmbeddingModelList = (query?: EmbeddingModelQuery): Promise<VO<EmbeddingModelVO[]>> => {
-  return apiClient.get('/platform/model/EMBEDDING/list', { params: query || {} })
-}
-
-/**
- * 编辑嵌入模型
- */
-export const editEmbeddingModel = (request: EmbeddingModelEditRequest): Promise<VO<boolean>> => {
-  return apiClient.put('/platform/model/EMBEDDING/edit', request)
+export const refreshModels = (type: ModelType, query?: ModelQuery): Promise<VO<ModelVO[]>> => {
+  return apiClient.post(`/platform/model/${type}/refresh`, null, { params: query || {} })
 }
 
 /**
@@ -115,6 +90,8 @@ export const sendChatMessage = async (
   if (token) {
     headers.Authorization = `Bearer ${token}`
   }
+  // 添加语言头
+  headers['Accept-Language'] = i18n.global.locale.value
 
   try {
     const response = await fetch(url, {
@@ -131,12 +108,12 @@ export const sendChatMessage = async (
         if (errorData.userTip) {
           ElMessage.error(errorData.userTip)
         } else {
-          ElMessage.error(`请求失败: ${response.status}`)
+          ElMessage.error(`${i18n.global.t('common.error_request_failed')}: ${response.status}`)
         }
         throw new Error(errorData.userTip || `HTTP error! status: ${response.status}`)
       } catch (parseError) {
         // 如果无法解析响应体，使用默认错误信息
-        ElMessage.error(`网络错误: ${response.status}`)
+        ElMessage.error(`${i18n.global.t('common.error_network')}: ${response.status}`)
         throw new Error(`HTTP error! status: ${response.status}`)
       }
     }
@@ -145,7 +122,7 @@ export const sendChatMessage = async (
     const decoder = new TextDecoder()
 
     if (!reader) {
-      throw new Error('无法获取响应流')
+      throw new Error(i18n.global.t('common.error_no_response_stream'))
     }
 
     // 处理业务错误的统一函数
@@ -158,7 +135,7 @@ export const sendChatMessage = async (
             localStorage.removeItem('token')
             localStorage.removeItem('username')
           }
-          const error = new Error(errorData.userTip || errorData.errorMessage || '请求失败')
+          const error = new Error(errorData.userTip || errorData.errorMessage || i18n.global.t('common.error_request_failed'))
           callbacks.onError?.(error, errorData.userTip)
           callbacks.onComplete?.()
           return true

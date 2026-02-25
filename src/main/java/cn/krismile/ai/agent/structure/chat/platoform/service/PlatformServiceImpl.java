@@ -127,4 +127,24 @@ public class PlatformServiceImpl implements PlatformService {
                         ErrorCodeEnum.DATABASE_SERVICE_ERROR, "Failed to update model")))
                 .thenReturn(true);
     }
+
+    @Override
+    public Flux<ChatModelVO> refreshModels(ChatPlatformEnum platform, ChatModelTypeEnum type) {
+        return aiPlatformRepository.findByPlatform(platform)
+                .switchIfEmpty(Mono.defer(() -> {
+                    AiPlatformDO newPlatform = new AiPlatformDO();
+                    newPlatform.setPlatform(platform);
+                    return Mono.just(newPlatform);
+                }))
+                .flatMap(p -> {
+                    ChatPlatformEnum platformEnum = p.getPlatform();
+                    RedisKey.Key cacheKey = RedisKey.chatModel(platformEnum, type);
+
+                    return reactiveRedisTemplate.delete(cacheKey.key())
+                            .thenMany(platformEnum.strategy().listAllModels(type))
+                            .collectList()
+                            .thenReturn(platformEnum);
+                })
+                .flatMapMany(p -> this.listModels(p, type));
+    }
 }

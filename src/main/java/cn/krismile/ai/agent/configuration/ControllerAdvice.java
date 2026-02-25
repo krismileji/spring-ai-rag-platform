@@ -4,7 +4,9 @@ import host.springboot.framework3.core.enumeration.error.ErrorCodeEnum;
 import host.springboot.framework3.core.logging.LoggingComponent;
 import host.springboot.framework3.core.response.R;
 import host.springboot.framework3.core.response.vo.VO;
+import jakarta.annotation.Resource;
 import org.jspecify.annotations.NonNull;
+import org.springframework.context.MessageSource;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -24,6 +26,9 @@ import java.util.Optional;
 @RestControllerAdvice
 public class ControllerAdvice implements LoggingComponent {
 
+    @Resource
+    private MessageSource messageSource;
+
     /**
      * 处理认证异常
      *
@@ -41,7 +46,9 @@ public class ControllerAdvice implements LoggingComponent {
         log().error("[{}] Authorization-未登录/认证失败 [requestUri: {}, requestMethod: {}, clientIp: {}, requestInfo: {}, errorMessage: {}]",
                 logTag(), exchange.getRequest().getURI(), exchange.getRequest().getMethod(), clientIp, getRequestInfo(exchange), e.getLocalizedMessage(), e);
         log().warn("[{}] -------------------------------- Authorization-未登录/认证失败 -------------------------------- [ End ]", logTag());
-        return Mono.just(R.fail(ErrorCodeEnum.ACCESS_UNAUTHORIZED, "请先登录或认证失败"));
+        String message = this.messageSource.getMessage("error.access.unauthorized",
+                null, exchange.getLocaleContext().getLocale());
+        return Mono.just(R.fail(ErrorCodeEnum.ACCESS_UNAUTHORIZED, message));
     }
 
     /**
@@ -61,7 +68,9 @@ public class ControllerAdvice implements LoggingComponent {
         log().error("[{}] Authorization-无权限 [requestUri: {}, requestMethod: {}, clientIp: {}, requestInfo: {}, errorMessage: {}]",
                 logTag(), exchange.getRequest().getURI(), exchange.getRequest().getMethod(), clientIp, getRequestInfo(exchange), e.getLocalizedMessage(), e);
         log().warn("[{}] -------------------------------- Authorization-无权限 -------------------------------- [ End ]", logTag());
-        return Mono.just(R.fail(ErrorCodeEnum.USER_IDENTITY_VERIFICATION_FAILED, "无权限访问"));
+        String message = this.messageSource.getMessage("error.access.denied",
+                null, exchange.getLocaleContext().getLocale());
+        return Mono.just(R.fail(ErrorCodeEnum.USER_IDENTITY_VERIFICATION_FAILED, message));
     }
 
     /**

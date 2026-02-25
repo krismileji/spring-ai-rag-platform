@@ -23,11 +23,14 @@
 import { ref, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import SettingsSidebar from '../components/settings/SettingsSidebar.vue'
 import SettingsContent from '../components/settings/SettingsContent.vue'
 import { useSettings, type AiSettings } from '../composables/useSettings'
 import { useTheme } from '../composables/useTheme'
 import type { ChatPlatformVO } from '../api/model'
+
+const { t, locale } = useI18n()
 
 // ==================== 类型定义 ====================
 interface GeneralSettings {
@@ -110,7 +113,7 @@ const loadSettings = async () => {
 const saveAiSettings = async () => {
   const currentProvider = providers.value.find((p) => p.id === selectedProvider.value)
   if (!currentProvider) {
-    ElMessage.error('未找到对应的平台')
+    ElMessage.error(t('settings.message.provider_not_found'))
     return
   }
 
@@ -130,10 +133,10 @@ const saveGeneralSettings = async () => {
     // TODO: 提交到后端接口保存
     // await api.saveGeneralSettings(generalSettings.value)
 
-    ElMessage.success('通用设置已保存')
+    ElMessage.success(t('settings.message.general_save_success'))
   } catch (error) {
     console.error('保存失败:', error)
-    ElMessage.error('保存失败，请重试')
+    ElMessage.error(t('settings.message.save_failed_retry'))
   }
 }
 
@@ -160,6 +163,11 @@ watch(
 // 监听平台切换，加载对应平台的配置
 watch(selectedProvider, (newVal) => {
   updateAiSettingsForm(newVal)
+})
+
+// 监听语言变化，重新加载平台列表以更新翻译
+watch(locale, () => {
+  loadSettings()
 })
 
 // 监听主题设置变化，实时应用主题

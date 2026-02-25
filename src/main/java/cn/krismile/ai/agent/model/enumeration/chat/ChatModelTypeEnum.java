@@ -18,12 +18,12 @@ public enum ChatModelTypeEnum implements BaseEnum<String> {
     /**
      * 聊天模型
      */
-    CHAT("CHAT", "聊天模型"),
+    CHAT("CHAT", "enum.chat_model_type.chat"),
 
     /**
      * 嵌入模型
      */
-    EMBEDDING("EMBEDDING", "嵌入模型");
+    EMBEDDING("EMBEDDING", "enum.chat_model_type.embedding");
 
     /**
      * 枚举值

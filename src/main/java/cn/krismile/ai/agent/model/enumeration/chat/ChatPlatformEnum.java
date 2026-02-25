@@ -22,17 +22,17 @@ public enum ChatPlatformEnum implements BaseEnum<String> {
     /**
      * Ollama
      */
-    OLLAMA("ollama", "Ollama", OllamaChatStrategyImpl.BEAN_NAME),
+    OLLAMA("ollama", "enum.chat_platform.ollama", OllamaChatStrategyImpl.BEAN_NAME),
 
     /**
      * 阿里云
      */
-    ALIYUN("aliyun", "阿里云", AliYunChatStrategyImpl.BEAN_NAME),
+    ALIYUN("aliyun", "enum.chat_platform.aliyun", AliYunChatStrategyImpl.BEAN_NAME),
 
     /**
      * Deepseek
      */
-    DEEPSEEK("deepseek", "Deepseek", DeepSeekChatStrategyImpl.BEAN_NAME);
+    DEEPSEEK("deepseek", "enum.chat_platform.deepseek", DeepSeekChatStrategyImpl.BEAN_NAME);
 
     /**
      * 枚举值

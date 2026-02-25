@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import {
   getChatPlatformList,
   editChatPlatform,
@@ -40,10 +41,11 @@ const PLATFORM_COLORS: Record<string, string> = {
 }
 
 // ==================== 平台名称映射 ====================
-const PLATFORM_NAMES: Record<string, string> = {
-  ollama: 'Ollama',
-  deepseek: 'DeepSeek',
-  aliyun: '阿里云',
+// 使用 computed 在组件内部获取，这里仅保留 key 映射
+const PLATFORM_NAME_KEYS: Record<string, string> = {
+  ollama: 'settings.platform.ollama',
+  deepseek: 'settings.platform.deepseek',
+  aliyun: 'settings.platform.aliyun',
 }
 
 // ==================== 平台ID映射 ====================
@@ -54,16 +56,23 @@ const PLATFORM_MAP: Record<string, 'ollama' | 'deepseek' | 'aliyun'> = {
 }
 
 export const useSettings = () => {
+  const { t } = useI18n()
   const providers = ref<Provider[]>([])
 
   // 加载平台列表，返回平台配置数据
   const loadPlatformList = async () => {
+    // 检查是否已登录，未登录不调用接口
+    const token = localStorage.getItem('token')
+    if (!token) {
+      return { firstProviderId: null, platformsData: [] }
+    }
+
     try {
       const response = await getChatPlatformList()
       if (response.errorCode === '00000' && response.data && response.data.length > 0) {
         providers.value = response.data.map((platform: ChatPlatformVO) => ({
           id: platform.platform,
-          name: PLATFORM_NAMES[platform.platform] || platform.platform,
+          name: PLATFORM_NAME_KEYS[platform.platform] ? t(PLATFORM_NAME_KEYS[platform.platform]!) : platform.platform,
           enabled: platform.enabled,
           color: PLATFORM_COLORS[platform.platform] || '#6B7280',
           existApiKey: platform.existApiKey,
@@ -77,7 +86,7 @@ export const useSettings = () => {
       return { firstProviderId: null, platformsData: [] }
     } catch (error) {
       console.error('加载配置失败:', error)
-      ElMessage.error('加载配置失败')
+      ElMessage.error(t('settings.message.load_config_failed'))
       return { firstProviderId: null, platformsData: [] }
     }
   }
@@ -93,13 +102,13 @@ export const useSettings = () => {
 
     // 如果不是加密文本，校验 API Key 是否为空
     if (!isApiKeyMasked && !aiSettings.apiKey.trim()) {
-      ElMessage.warning('请输入API Key')
+      ElMessage.warning(t('settings.message.api_key_required'))
       return false
     }
 
     const platform = PLATFORM_MAP[providerId]
     if (!platform) {
-      ElMessage.error('不支持的平台类型')
+      ElMessage.error(t('settings.message.platform_invalid'))
       return false
     }
 
@@ -119,27 +128,31 @@ export const useSettings = () => {
         defaultOptions.enableThinking = aiSettings.enableThinking
       }
 
-      const request: ChatPlatformEditRequest = {
+      // 构造请求参数
+      const payload: ChatPlatformEditRequest = {
         platform,
+        apiKey: isApiKeyMasked ? undefined : aiSettings.apiKey, // 如果是加密文本，不传 apiKey
+        defaultOptions: {
+          ...defaultOptions,
+          // models 字段在 ChatPlatformEditRequest 中未定义，暂时移除
+          // 后端接口似乎不支持通过此接口更新模型列表，如果需要更新模型列表，需要确认后端接口定义
+        },
         enabled: providerEnabled,
-        // 只有当 API Key 不是加密文本时才传递
-        ...(!isApiKeyMasked && { apiKey: aiSettings.apiKey }),
-        ...(Object.keys(defaultOptions).length > 0 && { defaultOptions }),
       }
 
-      const response = await editChatPlatform(request)
+      const response = await editChatPlatform(payload)
 
       if (response.errorCode === '00000') {
-        ElMessage.success('AI服务商设置已保存')
+        ElMessage.success(t('settings.message.save_success'))
         await loadPlatformList()
         return true
-      } else {
-        ElMessage.error(response.userTip || '保存失败')
-        return false
       }
+
+      ElMessage.error(response.userTip || t('settings.message.save_failed'))
+      return false
     } catch (error) {
       console.error('保存失败:', error)
-      ElMessage.error('保存失败，请重试')
+      ElMessage.error(t('settings.message.save_failed'))
       return false
     }
   }
@@ -150,7 +163,7 @@ export const useSettings = () => {
     console.log('Test connection:', providerId, aiSettings)
     return new Promise((resolve) => {
       setTimeout(() => {
-        ElMessage.success('连接测试成功')
+        ElMessage.success(t('settings.message.test_connection_success'))
         resolve(true)
       }, 1000)
     })

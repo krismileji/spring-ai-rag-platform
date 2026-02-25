@@ -20,12 +20,12 @@ public enum ChatKnowledgeTypeEnum implements BaseEnum<String> {
     /**
      * LOCAL
      */
-    LOCAL("LOCAL", "本地知识库", LocalChatKnowledgeStrategy.class),
+    LOCAL("LOCAL", "enum.chat_knowledge_type.local", LocalChatKnowledgeStrategy.class),
 
     /**
      * 阿里云百炼平台
      */
-    ALI_BAI_LIAN("ALI_BAI_LIAN", "阿里云百炼平台", LocalChatKnowledgeStrategy.class);
+    ALI_BAI_LIAN("ALI_BAI_LIAN", "enum.chat_knowledge_type.ali_bai_lian", LocalChatKnowledgeStrategy.class);
 
     /**
      * 枚举值

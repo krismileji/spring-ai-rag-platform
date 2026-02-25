@@ -2,10 +2,10 @@
   <div class="chat-area">
     <div class="chat-header">
       <div class="header-left">
-        <el-select v-model="selectedModel" placeholder="选择模型" style="width: 260px" :loading="modelLoading">
+        <el-select v-model="selectedModel" :placeholder="t('chat.area.select_model')" style="width: 260px" :loading="modelLoading">
           <el-option-group v-for="platform in platformGroups" :key="platform.platform" :label="platform.platformName">
             <el-option v-for="item in platform.models" :key="item.model" :label="item.modelName" :value="item.model">
-              <el-tooltip :content="item.description || '暂无描述'" placement="right" :disabled="!item.description"
+              <el-tooltip :content="item.description || t('chat.area.no_description')" placement="right" :disabled="!item.description"
                 effect="light" :show-after="300" popper-class="model-description-tooltip">
                 <span style="display: block; width: 100%">{{ item.modelName }}</span>
               </el-tooltip>
@@ -16,8 +16,8 @@
       <div class="header-right">
         <div class="knowledge-type-selector">
           <el-radio-group v-model="knowledgeType" size="small">
-            <el-radio value="">不启用知识库</el-radio>
-            <el-radio value="LOCAL">本地知识库</el-radio>
+            <el-radio value="">{{ t('chat.knowledge.none') }}</el-radio>
+            <el-radio value="LOCAL">{{ t('chat.knowledge.local') }}</el-radio>
             <!-- <el-radio value="ALI_BAI_LIAN">云端知识库</el-radio> -->
           </el-radio-group>
         </div>
@@ -30,7 +30,7 @@
         <el-icon class="is-loading" :size="48">
           <Loading />
         </el-icon>
-        <div class="loading-text">加载中...</div>
+        <div class="loading-text">{{ t('common.loading') }}</div>
       </div>
     </div>
 
@@ -38,8 +38,8 @@
     <div v-else-if="!chatStore.currentSession" class="empty-container">
       <div class="empty-state">
         <div class="empty-icon">👋</div>
-        <div class="empty-text">欢迎使用 AI 助手</div>
-        <div class="empty-hint">请先创建一个对话开始聊天</div>
+        <div class="empty-text">{{ t('chat.welcome.title') }}</div>
+        <div class="empty-hint">{{ t('chat.welcome.hint') }}</div>
       </div>
     </div>
 
@@ -48,8 +48,8 @@
       <div ref="messagesContainer" class="chat-messages">
         <div v-if="chatStore.currentMessages.length === 0" class="empty-state">
           <div class="empty-icon">💬</div>
-          <div class="empty-text">开始新的对话</div>
-          <div class="empty-hint">输入消息开始与 AI 互动</div>
+          <div class="empty-text">{{ t('chat.empty.title') }}</div>
+          <div class="empty-hint">{{ t('chat.empty.hint') }}</div>
         </div>
 
         <MessageBubble v-for="message in chatStore.currentMessages" :key="message.id" :message="message" />
@@ -65,23 +65,25 @@ import { ref, watch, nextTick, onMounted } from 'vue'
 import { useChatStore } from '../../stores/chat'
 import MessageBubble from './MessageBubble.vue'
 import MessageInput from './MessageInput.vue'
-import { getChatModelList, type ChatModelVO } from '../../api/model'
+import { getModelList, type ModelVO } from '../../api/model'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const chatStore = useChatStore()
 const router = useRouter()
 const messagesContainer = ref<HTMLElement>()
 const selectedModel = ref('')
-const modelList = ref<ChatModelVO[]>([])
+const modelList = ref<ModelVO[]>([])
 const modelLoading = ref(false)
 const knowledgeType = ref('')
 
 interface PlatformGroup {
   platform: string
   platformName: string
-  models: ChatModelVO[]
+  models: ModelVO[]
 }
 
 const platformGroups = ref<PlatformGroup[]>([])
@@ -105,15 +107,15 @@ watch(knowledgeType, (newType) => {
 const fetchModelList = async () => {
   modelLoading.value = true
   try {
-    const response = await getChatModelList()
+    const response = await getModelList('CHAT')
     if (response.errorCode !== '00000') {
-      ElMessage.error(response.errorMessage || '获取模型列表失败')
+      ElMessage.error(response.errorMessage || t('chat.area.fetch_model_failed'))
       return
     }
     modelList.value = response.data || []
 
     // 按平台分组
-    const platformMap = new Map<string, { platformName: string; models: ChatModelVO[] }>()
+    const platformMap = new Map<string, { platformName: string; models: ModelVO[] }>()
     // 只展示 enabled 为 true 的模型
     modelList.value.filter((model) => model.enabled === true).forEach((model) => {
       if (!platformMap.has(model.platform)) {
@@ -143,11 +145,11 @@ const fetchModelList = async () => {
     } else if (enabledModels.length === 0) {
       // 没有启用的模型,提示用户配置
       ElMessageBox.confirm(
-        '暂无可用模型,请先配置AI服务商并启用模型',
-        '提示',
+        t('chat.area.no_model_available'),
+        t('common.prompt'),
         {
-          confirmButtonText: '前往配置',
-          cancelButtonText: '取消',
+          confirmButtonText: t('chat.area.go_to_config'),
+          cancelButtonText: t('common.cancel'),
           type: 'warning',
         },
       )
@@ -159,7 +161,7 @@ const fetchModelList = async () => {
         })
     }
   } catch (error) {
-    ElMessage.error('获取模型列表失败')
+    ElMessage.error(t('chat.area.fetch_model_failed'))
     console.error('获取模型列表失败:', error)
   } finally {
     modelLoading.value = false

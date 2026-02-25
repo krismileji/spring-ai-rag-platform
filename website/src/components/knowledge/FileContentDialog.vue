@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="props.readonly ? '查看文件内容' : '编辑文件内容'"
+    :title="props.readonly ? t('knowledge.file_dialog.title_view') : t('knowledge.file_dialog.title_edit')"
     width="90%"
     :close-on-click-modal="false"
     @close="handleClose"
@@ -12,7 +12,7 @@
       v-loading="true"
       style="min-height: 300px; display: flex; align-items: center; justify-content: center"
     >
-      <span style="color: #999">正在上传文件...</span>
+      <span style="color: #999">{{ t('knowledge.file_dialog.uploading') }}</span>
     </div>
 
     <!-- 内容区域 -->
@@ -28,7 +28,7 @@
           <!-- 失败提示 -->
           <el-alert
             v-if="file && failedFileIds.includes(String(file.id))"
-            title="此文件保存失败，请检查后重试"
+            :title="t('knowledge.file_dialog.save_failed')"
             type="error"
             :closable="false"
             style="margin-bottom: 16px"
@@ -37,18 +37,18 @@
           <template v-if="file">
             <!-- 文件描述 -->
             <el-form label-width="100px">
-              <el-form-item label="文件描述">
+              <el-form-item :label="t('knowledge.file_dialog.file_desc')">
                 <el-input
                   v-model="file.description"
-                  placeholder="请输入文件描述（可选）"
+                  :placeholder="t('knowledge.file_dialog.file_desc_placeholder')"
                   clearable
                   :disabled="props.readonly"
                 />
               </el-form-item>
-              <el-form-item label="嵌入模型">
+              <el-form-item :label="t('knowledge.file_dialog.embedding_model')">
                 <el-select
                   v-model="file.embeddingModelId"
-                  placeholder="请选择嵌入模型"
+                  :placeholder="t('knowledge.file_dialog.select_model')"
                   :loading="loadingModels"
                   :disabled="props.readonly"
                   clearable
@@ -78,29 +78,29 @@
             <!-- 内容列表 -->
             <div class="content-list">
               <div class="list-header">
-                <h3>解析内容列表</h3>
+                <h3>{{ t('knowledge.file_dialog.parsed_content') }}</h3>
                 <el-button v-if="!props.readonly" type="primary" @click="handleAddContent(index)">
                   <el-icon><Plus /></el-icon>
-                  新增内容
+                  {{ t('knowledge.file_dialog.add_content') }}
                 </el-button>
               </div>
 
               <el-table :data="file.details" border stripe>
-                <el-table-column type="index" label="序号" width="60" />
+                <el-table-column type="index" :label="t('common.index')" width="60" />
 
-                <el-table-column label="内容" min-width="300">
+                <el-table-column :label="t('common.content')" min-width="300">
                   <template #default="{ row }">
                     <el-input
                       v-model="row.content"
                       type="textarea"
                       :rows="3"
-                      placeholder="请输入内容"
+                      :placeholder="t('common.input_content_placeholder')"
                       :disabled="props.readonly"
                     />
                   </template>
                 </el-table-column>
 
-                <el-table-column label="元数据（只读）" width="250">
+                <el-table-column :label="t('knowledge.file_dialog.metadata_readonly')" width="250">
                   <template #default="{ row }">
                     <div class="metadata-display">
                       <el-tag
@@ -115,13 +115,13 @@
                         v-if="!row.metaData || Object.keys(row.metaData).length === 0"
                         class="empty-text"
                       >
-                        无元数据
+                        {{ t('knowledge.file_dialog.no_metadata') }}
                       </span>
                     </div>
                   </template>
                 </el-table-column>
 
-                <el-table-column v-if="!props.readonly" label="操作" width="100" fixed="right">
+                <el-table-column v-if="!props.readonly" :label="t('common.action')" width="100" fixed="right">
                   <template #default="{ $index }">
                     <el-button
                       type="danger"
@@ -129,7 +129,7 @@
                       link
                       @click="handleDeleteContent(index, $index)"
                     >
-                      删除
+                      {{ t('common.delete') }}
                     </el-button>
                   </template>
                 </el-table-column>
@@ -141,9 +141,9 @@
     </div>
 
     <template #footer>
-      <el-button @click="handleClose">{{ props.readonly ? '关闭' : '取消' }}</el-button>
+      <el-button @click="handleClose">{{ props.readonly ? t('common.close') : t('common.cancel') }}</el-button>
       <el-button v-if="!props.readonly" type="primary" :loading="saving" @click="handleSave">
-        保存
+        {{ t('common.save') }}
       </el-button>
     </template>
   </el-dialog>
@@ -152,14 +152,16 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
+
+const { t } = useI18n()
 import { Plus } from '@element-plus/icons-vue'
 import { addKnowledgeFile, getKnowledgeFileList } from '@/api/knowledge-api'
-import { getEmbeddingModelList } from '@/api/chat-api'
+import { getModelList, type ModelVO } from '@/api/chat-api'
 import type {
   KnowledgeFileUploadVO,
   KnowledgeFileAddRequest,
-  EmbeddingModelVO,
   KnowledgeFileVO,
 } from '@/api/model'
 
@@ -182,7 +184,7 @@ const loading = ref(false)
 const loadingModels = ref(false)
 const activeFileIndex = ref('0')
 const failedFileIds = ref<string[]>([])
-const embeddingModels = ref<EmbeddingModelVO[]>([])
+const embeddingModels = ref<ModelVO[]>([])
 
 // 内部可编辑数据
 const editableFilesData = ref<KnowledgeFileUploadVO[]>([])
@@ -192,9 +194,9 @@ const fileBaseInfoMap = ref<Record<string, KnowledgeFileVO>>({})
 
 // 分组后的模型列表
 const groupedModels = computed(() => {
-  const groups: Record<string, EmbeddingModelVO[]> = {}
+  const groups: Record<string, ModelVO[]> = {}
   for (const model of embeddingModels.value) {
-    const platform = model.platformName || '未知平台'
+    const platform = model.platformName || t('common.platform.unknown')
     if (!groups[platform]) {
       groups[platform] = []
     }
@@ -245,7 +247,7 @@ const fetchEmbeddingModels = async () => {
   }
   loadingModels.value = true
   try {
-    const res = await getEmbeddingModelList()
+    const res = await getModelList('EMBEDDING')
     if (res.errorCode === '00000') {
       embeddingModels.value = res.data.filter((m) => m.enabled)
       if (embeddingModels.value.length > 0) {
@@ -253,11 +255,11 @@ const fetchEmbeddingModels = async () => {
       } else {
         // 无可用模型，提示并跳转
         ElMessageBox.confirm(
-          '当前未配置已启用的嵌入模型，无法保存文件内容。是否前往配置？',
-          '提示',
+          t('knowledge.message.no_embedding_model'),
+          t('common.prompt'),
           {
-            confirmButtonText: '前往配置',
-            cancelButtonText: '取消',
+            confirmButtonText: t('chat.area.go_to_config'),
+            cancelButtonText: t('common.cancel'),
             type: 'warning',
           },
         ).then(() => {
@@ -268,7 +270,7 @@ const fetchEmbeddingModels = async () => {
     }
   } catch (error) {
     console.error('Failed to fetch embedding models:', error)
-    ElMessage.error('获取嵌入模型列表失败')
+    ElMessage.error(t('knowledge.message.fetch_embedding_failed'))
   } finally {
     loadingModels.value = false
   }

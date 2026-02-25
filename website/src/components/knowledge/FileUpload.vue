@@ -14,7 +14,9 @@ import { uploadKnowledgeFile } from '@/api/knowledge-api'
 import { ElMessage } from 'element-plus'
 import FileContentDialog from './FileContentDialog.vue'
 import type { KnowledgeFileUploadVO } from '@/api/model'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const fileInputRef = ref<HTMLInputElement>()
 const dialogVisible = ref(false)
 const uploadedFiles = ref<KnowledgeFileUploadVO[]>([])
@@ -53,7 +55,7 @@ const handleFileSelect = async (event: Event) => {
   try {
     const response = await uploadKnowledgeFile(props.knowledgeId, fileArray)
     if (response.errorCode === '00000') {
-      ElMessage.success(response.userTip || '文件上传成功，请编辑内容')
+      ElMessage.success(response.userTip || t('knowledge.message.upload_success_edit'))
       emit('uploadSuccess', response.data)
 
       // 更新弹框数据

@@ -41,6 +41,9 @@ public class ChatModelVO implements Serializable {
     @Schema(description = "描述")
     private String description;
 
+    @Schema(description = "元数据")
+    private ChatModelMetaDataVO metaData;
+
     @Schema(description = "是否启用")
     private Boolean enabled;
 

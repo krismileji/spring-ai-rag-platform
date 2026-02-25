@@ -1,6 +1,6 @@
 import apiClient from './api-client'
 import type { VO } from './model'
-import type { ChatModelVO } from './chat-api'
+import type { ModelVO } from './chat-api'
 
 // 知识库信息
 export interface KnowledgeVO {
@@ -21,7 +21,7 @@ export interface KnowledgeFileVO {
   id: string
   fileName: string
   description: string
-  relEmbeddingModel?: ChatModelVO
+  relEmbeddingModel?: ModelVO
   createTime: string
 }
 

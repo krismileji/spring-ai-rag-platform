@@ -1,11 +1,20 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { ElConfigProvider } from 'element-plus'
+// @ts-ignore
+import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
+// @ts-ignore
+import en from 'element-plus/dist/locale/en.mjs'
 import SidebarNav from './components/common/SidebarNav.vue'
 import { useChatStore } from './stores/chat'
 import { useTheme } from './composables/useTheme'
 
 const chatStore = useChatStore()
 const { initTheme } = useTheme()
+
+const { locale: i18nLocale } = useI18n()
+const locale = computed(() => (i18nLocale.value === 'zh-CN' ? zhCn : en))
 
 // 初始化聊天store
 onMounted(async () => {
@@ -15,10 +24,12 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="app-container">
-    <SidebarNav />
-    <router-view />
-  </div>
+  <el-config-provider :locale="locale">
+    <div class="app-container">
+      <SidebarNav />
+      <router-view />
+    </div>
+  </el-config-provider>
 </template>
 
 <style>

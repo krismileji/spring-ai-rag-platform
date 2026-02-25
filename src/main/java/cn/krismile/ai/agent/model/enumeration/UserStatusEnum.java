@@ -17,12 +17,12 @@ public enum UserStatusEnum implements BaseEnum<String> {
     /**
      * 正常
      */
-    NORMAL("NORMAL", "正常"),
+    NORMAL("NORMAL", "enum.user_status.normal"),
 
     /**
      * 禁用
      */
-    DISABLED("DISABLED", "禁用");
+    DISABLED("DISABLED", "enum.user_status.disabled");
 
     /**
      * 枚举值

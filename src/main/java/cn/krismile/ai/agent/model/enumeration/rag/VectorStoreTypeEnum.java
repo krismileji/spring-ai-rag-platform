@@ -17,7 +17,7 @@ public enum VectorStoreTypeEnum implements BaseEnum<String> {
     /**
      * Qdrant
      */
-    QDRANT("QDRANT", "Qdrant 向量存储");
+    QDRANT("QDRANT", "enum.vector_store_type.qdrant");
 
     /**
      * 枚举值

@@ -6,7 +6,7 @@
         type="textarea"
         :rows="3"
         resize="none"
-        placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
+        :placeholder="t('chat.input.placeholder')"
         class="input-textarea"
         @keydown="handleKeyDown"
       />
@@ -19,7 +19,7 @@
             @click="enableThinking = !enableThinking"
           >
             <span class="toggle-icon">{{ enableThinking ? '🧠' : '⚡' }}</span>
-            <span class="toggle-text">{{ enableThinking ? '深度思考' : '快速回答' }}</span>
+            <span class="toggle-text">{{ enableThinking ? t('chat.input.thinking_on') : t('chat.input.thinking_off') }}</span>
           </button>
         </div>
 
@@ -33,7 +33,7 @@
             @click="handleSend"
             class="send-btn"
           >
-            发送
+            {{ t('chat.input.send') }}
           </el-button>
         </div>
       </div>
@@ -46,7 +46,9 @@ import { ref } from 'vue'
 import { Promotion } from '@element-plus/icons-vue'
 import { useChatStore } from '../../stores/chat'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const chatStore = useChatStore()
 const inputText = ref('')
 const isSending = ref(false)
@@ -68,7 +70,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
 const handleSend = async () => {
   if (!inputText.value.trim()) {
-    ElMessage.warning('请输入消息内容')
+    ElMessage.warning(t('chat.input.warning.empty'))
     return
   }
 

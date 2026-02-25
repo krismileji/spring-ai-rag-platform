@@ -2,6 +2,7 @@ package cn.krismile.ai.agent.model.domain;
 
 import cn.krismile.ai.agent.model.enumeration.chat.ChatModelTypeEnum;
 import cn.krismile.ai.agent.model.request.chat.ChatOptionsRequest;
+import cn.krismile.ai.agent.model.response.chat.ChatModelMetaDataVO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -45,6 +46,11 @@ public class AiModelDO extends BaseIdDO {
      * 默认配置
      */
     private ChatOptionsRequest defaultOptions;
+
+    /**
+     * 模型元数据
+     */
+    private ChatModelMetaDataVO metaData;
 
     /**
      * 是否启用

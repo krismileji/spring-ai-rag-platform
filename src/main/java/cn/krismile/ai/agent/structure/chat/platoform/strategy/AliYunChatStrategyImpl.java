@@ -1,7 +1,9 @@
 package cn.krismile.ai.agent.structure.chat.platoform.strategy;
 
+import cn.krismile.ai.agent.model.enumeration.chat.ChatModelModalityEnum;
 import cn.krismile.ai.agent.model.enumeration.chat.ChatModelTypeEnum;
 import cn.krismile.ai.agent.model.enumeration.chat.ChatPlatformEnum;
+import cn.krismile.ai.agent.model.response.chat.ChatModelMetaDataVO;
 import cn.krismile.ai.agent.model.response.chat.ChatModelVO;
 import cn.krismile.ai.agent.structure.chat.platoform.ChatPlatformStrategy;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -85,15 +87,28 @@ public class AliYunChatStrategyImpl extends AbstractChatPlatformStrategy impleme
                             return modes;
                         })
                         .map(Collection::stream)
-                        .map(modelStream -> Flux.fromStream(modelStream.map(model -> new ChatModelVO()
-                                .setType(type)
-                                .setPlatform(this.platform().getValue())
-                                .setPlatformName(this.platform().getReasonPhrase())
-                                .setModel(model.get("model").asText())
-                                .setModelName(model.get("name").asText())
-                                .setDescription(model.get("description").asText())
-                                .setEnabled(true)
-                                .setSort(modelIndex.getAndIncrement())
+                        .map(modelStream -> Flux.fromStream(modelStream.map(model -> {
+                                    ChatModelMetaDataVO metaData = new ChatModelMetaDataVO();
+                                    List<ChatModelModalityEnum> modalities = new ArrayList<>();
+                                    model.optional("inferenceMetadata")
+                                            .flatMap(inferenceMetadata -> inferenceMetadata.optional("request_modality")
+                                                    .filter(requestModality -> requestModality.isArray() && !requestModality.isEmpty())
+                                            )
+                                            .ifPresent(requestModality -> requestModality.forEach(t ->
+                                                    Optional.ofNullable(ChatModelModalityEnum.ofType(t.asText()))
+                                                            .ifPresent(modalities::add)));
+                                    metaData.setRequestModalities(modalities);
+                                    return new ChatModelVO()
+                                            .setType(type)
+                                            .setPlatform(this.platform().getValue())
+                                            .setPlatformName(this.platform().getReasonPhrase())
+                                            .setModel(model.get("model").asText())
+                                            .setModelName(model.get("name").asText())
+                                            .setDescription(model.get("description").asText())
+                                            .setMetaData(metaData)
+                                            .setEnabled(true)
+                                            .setSort(modelIndex.getAndIncrement());
+                                }
                         )))
                         .orElseGet(Flux::empty)
                 );

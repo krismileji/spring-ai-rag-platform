@@ -3,7 +3,7 @@
     <div class="nav-header">
       <!-- 未登录状态 -->
       <div v-if="!authStore.isLoggedIn" class="login-prompt" @click="authStore.showLoginDialog = true">
-        <el-tooltip content="点击登录" placement="right">
+        <el-tooltip :content="t('nav.login')" placement="right">
           <div class="user-avatar">
             <el-avatar :size="40">
               <el-icon :size="24"><User /></el-icon>
@@ -42,7 +42,7 @@
           <div class="user-menu">
             <div class="menu-item logout" @click="handleMenuClick('logout')">
               <el-icon><SwitchButton /></el-icon>
-              <span>退出登录</span>
+              <span>{{ t('nav.logout') }}</span>
             </div>
           </div>
         </div>
@@ -50,13 +50,13 @@
     </div>
 
     <div class="nav-menu">
-      <el-tooltip content="聊天" placement="right">
+      <el-tooltip :content="t('nav.chat')" placement="right">
         <div class="nav-item" :class="{ active: isActive('/chat') }" @click="navigateTo('/chat')">
           <el-icon :size="24"><ChatDotRound /></el-icon>
         </div>
       </el-tooltip>
 
-      <el-tooltip content="知识库" placement="right">
+      <el-tooltip :content="t('nav.knowledge')" placement="right">
         <div
           class="nav-item"
           :class="{ active: isActive('/knowledge') }"
@@ -68,7 +68,7 @@
     </div>
 
     <div class="nav-footer">
-      <el-tooltip content="设置" placement="right">
+      <el-tooltip :content="t('nav.settings')" placement="right">
         <div
           class="nav-item"
           :class="{ active: isActive('/settings') }"
@@ -78,7 +78,13 @@
         </div>
       </el-tooltip>
 
-      <el-tooltip :content="theme === 'dark' ? '切换亮色模式' : '切换深色模式'" placement="right">
+      <el-tooltip :content="languageTooltip" placement="right">
+        <div class="nav-item" @click="toggleLanguage">
+          <span style="font-size: 14px; font-weight: bold;">{{ languageLabel }}</span>
+        </div>
+      </el-tooltip>
+
+      <el-tooltip :content="theme === 'dark' ? t('theme.light') : t('theme.dark')" placement="right">
         <div class="nav-item" @click="toggleTheme">
           <el-icon :size="24"><component :is="themeIcon" /></el-icon>
         </div>
@@ -93,6 +99,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   ChatDotRound,
@@ -107,15 +114,24 @@ import { useAuthStore } from '../../stores/auth'
 import { useTheme } from '../../composables/useTheme'
 import LoginDialog from './LoginDialog.vue'
 
+const { t, locale } = useI18n()
 const authStore = useAuthStore()
 const { theme } = useTheme()
 const route = useRoute()
 const router = useRouter()
 
 const themeIcon = computed(() => (theme.value === 'dark' ? Moon : Sunny))
+const languageLabel = computed(() => t('nav.lang_label'))
+const languageTooltip = computed(() => t('nav.switch_language'))
 
 const toggleTheme = () => {
   theme.value = theme.value === 'dark' ? 'light' : 'dark'
+}
+
+const toggleLanguage = () => {
+  locale.value = locale.value === 'zh-CN' ? 'en-US' : 'zh-CN'
+  localStorage.setItem('app_locale', locale.value)
+  ElMessage.success(t('common.language_switched'))
 }
 
 const pendingNavPath = ref<string | null>(null)
@@ -127,12 +143,13 @@ const isActive = (path: string) => {
 
 // 导航跳转
 const navigateTo = async (path: string) => {
-  // 如果是知识库页面且未登录，需要先登录
-  if (path === '/knowledge' && !authStore.isLoggedIn) {
+  // 如果是知识库页面或设置页面且未登录，需要先登录
+  if ((path === '/knowledge' || path === '/settings') && !authStore.isLoggedIn) {
     try {
-      await ElMessageBox.confirm('访问知识库需要登录，是否立即登录?', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+      const messageKey = path === '/knowledge' ? 'common.login_required' : 'common.login_required_settings'
+      await ElMessageBox.confirm(t(messageKey), t('common.prompt'), {
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
         type: 'warning',
       })
       // 用户点击确定，保存目标路径并打开登录弹窗
@@ -151,7 +168,7 @@ const navigateTo = async (path: string) => {
 const handleMenuClick = (action: string) => {
   if (action === 'logout') {
     authStore.logout()
-    ElMessage.success('已退出登录')
+    ElMessage.success(t('common.logout_success'))
   }
 }
 

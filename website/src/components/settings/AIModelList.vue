@@ -2,27 +2,40 @@
   <div class="model-list-container">
     <el-tabs v-model="activeTab" class="model-tabs">
       <!-- 聊天模型标签页 -->
-      <el-tab-pane label="聊天模型" name="chat">
+      <el-tab-pane :label="t('settings.ai.chat_model')" name="chat">
         <div class="tab-content">
           <div class="model-list-header">
-            <h3>聊天模型列表</h3>
-            <el-input
-              v-model="chatSearchQuery"
-              placeholder="搜索模型..."
-              clearable
-              :prefix-icon="Search"
-              class="model-search"
-            />
+            <h3>{{ t('settings.ai.chat_model_list') }}</h3>
+            <div class="model-actions">
+              <el-tooltip
+                :content="t('common.refresh')"
+                placement="top"
+              >
+                <el-button
+                  :icon="Refresh"
+                  circle
+                  :loading="chatLoading"
+                  @click="handleRefresh"
+                />
+              </el-tooltip>
+              <el-input
+                v-model="chatSearchQuery"
+                :placeholder="t('settings.ai.search_model_placeholder')"
+                clearable
+                :prefix-icon="Search"
+                class="model-search"
+              />
+            </div>
           </div>
 
           <div v-if="chatLoading" class="model-list-loading">
             <el-icon class="is-loading"><Loading /></el-icon>
-            <span>加载中...</span>
+            <span>{{ t('common.loading') }}</span>
           </div>
 
           <div v-else-if="filteredChatModels.length === 0" class="model-list-empty">
             <el-icon><Box /></el-icon>
-            <span>{{ chatSearchQuery ? '未找到匹配的模型' : '暂无可用模型' }}</span>
+            <span>{{ chatSearchQuery ? t('settings.ai.no_model_found') : t('settings.ai.no_model_available') }}</span>
           </div>
 
           <div v-else class="model-list-content">
@@ -41,27 +54,40 @@
       </el-tab-pane>
 
       <!-- 嵌入模型标签页 -->
-      <el-tab-pane label="嵌入模型" name="embedding">
+      <el-tab-pane :label="t('settings.ai.embedding_model')" name="embedding">
         <div class="tab-content">
           <div class="model-list-header">
-            <h3>嵌入模型列表</h3>
-            <el-input
-              v-model="embeddingSearchQuery"
-              placeholder="搜索模型..."
-              clearable
-              :prefix-icon="Search"
-              class="model-search"
-            />
+            <h3>{{ t('settings.ai.embedding_model_list') }}</h3>
+            <div class="model-actions">
+              <el-tooltip
+                :content="t('common.refresh')"
+                placement="top"
+              >
+                <el-button
+                  :icon="Refresh"
+                  circle
+                  :loading="embeddingLoading"
+                  @click="handleRefresh"
+                />
+              </el-tooltip>
+              <el-input
+                v-model="embeddingSearchQuery"
+                :placeholder="t('settings.ai.search_model_placeholder')"
+                clearable
+                :prefix-icon="Search"
+                class="model-search"
+              />
+            </div>
           </div>
 
           <div v-if="embeddingLoading" class="model-list-loading">
             <el-icon class="is-loading"><Loading /></el-icon>
-            <span>加载中...</span>
+            <span>{{ t('common.loading') }}</span>
           </div>
 
           <div v-else-if="filteredEmbeddingModels.length === 0" class="model-list-empty">
             <el-icon><Box /></el-icon>
-            <span>{{ embeddingSearchQuery ? '未找到匹配的模型' : '暂无可用模型' }}</span>
+            <span>{{ embeddingSearchQuery ? t('settings.ai.no_model_found') : t('settings.ai.no_model_available') }}</span>
           </div>
 
           <div v-else class="model-list-content">
@@ -84,16 +110,17 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Search, Loading, Box } from '@element-plus/icons-vue'
+import { Search, Loading, Box, Refresh } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
 import {
-  getChatModelList,
-  editChatModel,
-  getEmbeddingModelList,
-  editEmbeddingModel,
-  type ChatModelVO,
-  type EmbeddingModelVO,
+  getModelList,
+  editModel,
+  refreshModels,
+  type ModelVO,
 } from '../../api/chat-api'
 import { ElMessage } from 'element-plus'
+
+const { t } = useI18n()
 
 interface Props {
   provider: string
@@ -107,13 +134,13 @@ const activeTab = ref('chat')
 // 聊天模型相关
 const chatSearchQuery = ref('')
 const chatLoading = ref(false)
-const chatModels = ref<ChatModelVO[]>([])
+const chatModels = ref<ModelVO[]>([])
 const enabledChatModels = ref<Set<string>>(new Set())
 
 // 嵌入模型相关
 const embeddingSearchQuery = ref('')
 const embeddingLoading = ref(false)
-const embeddingModels = ref<EmbeddingModelVO[]>([])
+const embeddingModels = ref<ModelVO[]>([])
 const enabledEmbeddingModels = ref<Set<string>>(new Set())
 
 const filteredChatModels = computed(() => {
@@ -154,7 +181,7 @@ const toggleChatModel = async (modelId: string, enabled: boolean) => {
   }
 
   try {
-    await editChatModel({
+    await editModel('CHAT', {
       id: model.id,
       model: modelId,
       enabled,
@@ -181,7 +208,7 @@ const toggleEmbeddingModel = async (modelId: string, enabled: boolean) => {
   }
 
   try {
-    await editEmbeddingModel({
+    await editModel('EMBEDDING', {
       id: model.id,
       model: modelId,
       enabled,
@@ -200,6 +227,36 @@ const toggleEmbeddingModel = async (modelId: string, enabled: boolean) => {
   }
 }
 
+const handleRefresh = async () => {
+  const type = activeTab.value === 'chat' ? 'CHAT' : 'EMBEDDING'
+  const loadingRef = activeTab.value === 'chat' ? chatLoading : embeddingLoading
+
+  loadingRef.value = true
+  try {
+    const response = await refreshModels(type, { platform: props.provider })
+    ElMessage.success(t('common.refresh_success'))
+
+    if (response.data) {
+      if (type === 'CHAT') {
+        chatModels.value = response.data
+        enabledChatModels.value = new Set(
+          chatModels.value.filter((m) => m.enabled !== false).map((m) => m.model),
+        )
+      } else {
+        embeddingModels.value = response.data
+        enabledEmbeddingModels.value = new Set(
+          embeddingModels.value.filter((m) => m.enabled !== false).map((m) => m.model),
+        )
+      }
+    }
+  } catch (error) {
+    console.error('[AIModelList] 刷新模型列表失败:', error)
+    ElMessage.error(t('common.refresh_failed'))
+  } finally {
+    loadingRef.value = false
+  }
+}
+
 const loadChatModels = async () => {
   console.log(
     '[AIModelList] loadChatModels called, provider:',
@@ -211,7 +268,7 @@ const loadChatModels = async () => {
   chatLoading.value = true
   try {
     console.log('[AIModelList] Fetching chat models for platform:', props.provider)
-    const response = await getChatModelList({ platform: props.provider })
+    const response = await getModelList('CHAT', { platform: props.provider })
     console.log('[AIModelList] Chat models API response:', response)
 
     if (response.data) {
@@ -243,7 +300,7 @@ const loadEmbeddingModels = async () => {
   embeddingLoading.value = true
   try {
     console.log('[AIModelList] Fetching embedding models for platform:', props.provider)
-    const response = await getEmbeddingModelList({ platform: props.provider })
+    const response = await getModelList('EMBEDDING', { platform: props.provider })
     console.log('[AIModelList] Embedding models API response:', response)
 
     if (response.data) {
@@ -335,6 +392,12 @@ watch(
   align-items: center;
   margin-bottom: 16px;
   gap: 16px;
+}
+
+.model-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .model-list-header h3 {

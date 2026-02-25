@@ -21,6 +21,7 @@ create table ai_model
     name            varchar(64)       not null comment '模型名称',
     description     varchar(255)      null comment '模型描述',
     default_options json              null comment '默认配置',
+    meta_data json null comment '元数据',
     enabled         tinyint default 1 not null comment '是否启用',
     sort            int               not null comment '排序',
     rel_platform_id bigint            not null comment '关联平台ID',

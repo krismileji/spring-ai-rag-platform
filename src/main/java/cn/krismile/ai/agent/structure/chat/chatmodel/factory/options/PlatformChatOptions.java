@@ -1,5 +1,6 @@
 package cn.krismile.ai.agent.structure.chat.chatmodel.factory.options;
 
+import cn.krismile.ai.agent.model.response.chat.ChatModelMetaDataVO;
 import cn.krismile.ai.agent.structure.chat.model.ChatPlatformDTO;
 import cn.krismile.ai.agent.util.PropertyDescriptorUtils;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
@@ -98,6 +99,11 @@ public class PlatformChatOptions implements ToolCallingChatOptions {
     private @Nullable Boolean enableThinking;
 
     /**
+     * 模型元数据
+     */
+    private @Nullable ChatModelMetaDataVO metaData;
+
+    /**
      * 平台信息
      */
     private @NonNull ChatPlatformDTO platform;
@@ -194,6 +200,18 @@ public class PlatformChatOptions implements ToolCallingChatOptions {
          */
         public @NonNull Builder ollamaOptions(@NonNull OllamaChatOptions ollamaOptions) {
             this.options.setOllamaOptions(ollamaOptions);
+            return this;
+        }
+
+        /**
+         * 设置模型元数据
+         *
+         * @param metaData 模型元数据
+         * @return Builder
+         * @since 1.0.0
+         */
+        public @NonNull Builder metaData(@Nullable ChatModelMetaDataVO metaData) {
+            this.options.setMetaData(metaData);
             return this;
         }
 
@@ -323,6 +341,11 @@ public class PlatformChatOptions implements ToolCallingChatOptions {
             if (this.options.enableThinking != null) {
                 dashScopeOptions.setEnableThinking(this.options.enableThinking);
                 ollamaOptions.setThinkOption(ThinkOption.ThinkBoolean.ENABLED);
+            }
+            if (this.options.metaData != null) {
+                dashScopeOptions.setMultiModel(Optional.ofNullable(this.options.metaData.getRequestModalities())
+                        .map(modalities -> modalities.size() > 1)
+                        .orElse(null));
             }
             this.options.dashScopeOptions = dashScopeOptions;
             this.options.deepSeekOptions = deepSeekOptions;

@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
+import i18n from '../i18n'
 
 // 配置 axios 基础 URL
 const apiClient = axios.create({
@@ -16,6 +17,8 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    // 添加语言头
+    config.headers['Accept-Language'] = i18n.global.locale.value
     return config
   },
   (error) => {
@@ -38,6 +41,7 @@ apiClient.interceptors.response.use(
       if (data.userTip) {
         ElMessage.error(data.userTip)
       }
+      return Promise.reject(data)
     }
     return data
   },

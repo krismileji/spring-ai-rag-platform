@@ -1,7 +1,7 @@
 <template>
   <div class="file-list">
-    <el-empty v-if="!files || files.length === 0" description="暂无文件">
-      <el-button type="primary" :icon="Upload" @click="$emit('upload')"> 上传文件 </el-button>
+    <el-empty v-if="!files || files.length === 0" :description="t('knowledge.file_list.empty')">
+      <el-button type="primary" :icon="Upload" @click="$emit('upload')"> {{ t('knowledge.detail.upload_file') }} </el-button>
     </el-empty>
     <div v-else class="file-grid">
       <div v-for="file in files" :key="file.id" class="file-card">
@@ -25,6 +25,9 @@
 
 <script setup lang="ts">
 import { Document, Upload, View, Delete } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface FileItem {
   id: string

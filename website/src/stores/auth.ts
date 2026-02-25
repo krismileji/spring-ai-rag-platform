@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { registerByUsername, loginByUsername } from '../api/model'
 import type { RegisterByUsernameRequest, LoginByUsernameRequest } from '../api/model'
 import { useChatStore } from './chat'
@@ -12,6 +13,7 @@ export interface User {
 }
 
 export const useAuthStore = defineStore('auth', () => {
+  const { t } = useI18n()
   const isLoggedIn = ref(false)
   const user = ref<User | null>(null)
   const token = ref<string | null>(null)
@@ -36,7 +38,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     if (response.errorCode !== '00000') {
       // 错误已在拦截器中统一处理，这里只需要抛出异常即可
-      throw new Error(response.userTip || '登录失败')
+      throw new Error(response.userTip || t('auth.login_failed'))
     }
 
     // 保存 token
@@ -71,7 +73,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     if (response.errorCode !== '00000') {
       // 错误已在拦截器中统一处理，这里只需要抛出异常即可
-      throw new Error(response.userTip || '注册失败')
+      throw new Error(response.userTip || t('auth.register_failed'))
     }
 
     // 注册成功,返回 true

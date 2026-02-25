@@ -22,10 +22,10 @@
             <div class="reasoning-header" @click="!message.isThinking && toggleReasoning(message.id)" :class="{ clickable: !message.isThinking }">
               <span class="reasoning-icon">🧠</span>
               <span class="reasoning-title">
-                {{ message.isThinking ? '正在思考中...' : '深度思考已完成' }}
+                {{ message.isThinking ? t('chat.message.thinking') : t('chat.message.thinking_completed') }}
               </span>
-              <span v-if="message.isThinking || message.thinkingDuration" class="reasoning-duration">(用时{{ thinkingElapsedTime }}秒)</span>
-              <span v-if="!message.isThinking" class="toggle-btn">{{ isReasoningExpanded(message.id) ? '收起' : '展开' }}</span>
+              <span v-if="message.isThinking || message.thinkingDuration" class="reasoning-duration">{{ t('chat.message.thinking_duration', { duration: thinkingElapsedTime }) }}</span>
+              <span v-if="!message.isThinking" class="toggle-btn">{{ isReasoningExpanded(message.id) ? t('chat.message.collapse') : t('chat.message.expand') }}</span>
             </div>
             <transition name="reasoning-collapse">
               <div v-show="(isReasoningExpanded(message.id) || message.isThinking) && message.reasoningContent" class="reasoning-content-wrapper">
@@ -59,8 +59,11 @@
 <script setup lang="ts">
 import { AgentMarkdown } from 'agent-markdown-vue'
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import 'animate.css'
 import type { Message } from '../../stores/chat'
+
+const { t, locale } = useI18n()
 
 const props = defineProps<{
   message: Message
@@ -74,7 +77,7 @@ const mdOptions = {
 
 const formatTime = (timestamp: number) => {
   const date = new Date(timestamp)
-  return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  return date.toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit' })
 }
 
 // 管理折叠状态

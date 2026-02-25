@@ -88,4 +88,20 @@ public class ChatPlatformController {
             @RequestBody @Valid ChatModelEditRequest request) {
         return this.platformService.editModel(type, request).map(R::data).defaultIfEmpty(R.data(false));
     }
+
+    /**
+     * 刷新聊天模型缓存
+     *
+     * @param platform 聊天平台
+     * @param type     聊天模型类型
+     * @return 刷新后的模型列表
+     * @since 1.0.0
+     */
+    @Operation(summary = "刷新聊天模型")
+    @PostMapping("/model/{type}/refresh")
+    public Mono<VO<List<ChatModelVO>>> refreshModels(
+            @RequestParam ChatPlatformEnum platform,
+            @PathVariable ChatModelTypeEnum type) {
+        return this.platformService.refreshModels(platform, type).collectList().map(R::data);
+    }
 }

@@ -17,12 +17,12 @@ public enum FilePlatformEnum implements BaseEnum<String> {
     /**
      * 本地
      */
-    LOCAL("LOCAL", "本地"),
+    LOCAL("LOCAL", "enum.file_platform.local"),
 
     /**
      * 阿里云对象存储
      */
-    ALIYUN_OSS("ALIYUN_OSS", "阿里云对象存储");
+    ALIYUN_OSS("ALIYUN_OSS", "enum.file_platform.aliyun_oss");
 
     /**
      * 枚举值

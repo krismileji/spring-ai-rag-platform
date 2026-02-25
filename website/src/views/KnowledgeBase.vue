@@ -50,6 +50,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import KnowledgeSidebar from '../components/knowledge/KnowledgeSidebar.vue'
 import KnowledgeHome from '../components/knowledge/KnowledgeHome.vue'
 import KnowledgeDetail from '../components/knowledge/KnowledgeDetail.vue'
@@ -57,6 +58,8 @@ import KnowledgeDialog from '../components/knowledge/KnowledgeDialog.vue'
 import FileContentDialog from '../components/knowledge/FileContentDialog.vue'
 import { getFileDetail } from '@/api/knowledge-api'
 import type { KnowledgeFileUploadVO } from '@/api/model'
+
+const { t } = useI18n()
 
 interface KnowledgeBase {
   id: string
@@ -173,7 +176,7 @@ const handleViewFile = async (file: FileItem) => {
 const handleDeleteFile = (file: FileItem) => {
   if (!selectedKb.value?.files) return
   selectedKb.value.files = selectedKb.value.files.filter((f) => f.id !== file.id)
-  ElMessage.success('删除成功')
+  ElMessage.success(t('knowledge.message.delete_success'))
 }
 
 // 更新文件列表

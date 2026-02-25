@@ -59,4 +59,14 @@ public interface PlatformService {
      */
     Mono<Boolean> editModel(ChatModelTypeEnum type, ChatModelEditRequest request);
 
+    /**
+     * 刷新模型缓存
+     *
+     * @param platform
+     * @param type     模型类型
+     * @return 刷新后的模型列表
+     * @since 1.0.0
+     */
+    Flux<ChatModelVO> refreshModels(ChatPlatformEnum platform, ChatModelTypeEnum type);
+
 }

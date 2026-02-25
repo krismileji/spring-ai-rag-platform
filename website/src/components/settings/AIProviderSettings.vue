@@ -1,8 +1,8 @@
 <template>
   <div class="content-section">
     <div class="section-header">
-      <h1>AI 服务商</h1>
-      <p class="section-desc">配置您的AI服务商信息,管理API密钥和模型选择</p>
+      <h1>{{ t('settings.ai.title') }}</h1>
+      <p class="section-desc">{{ t('settings.ai.description') }}</p>
     </div>
 
     <div class="provider-layout">
@@ -49,8 +49,11 @@ import AIProviderCard from './AIProviderCard.vue'
 import AIProviderConfigForm from './AIProviderConfigForm.vue'
 import AIModelList from './AIModelList.vue'
 import { editChatPlatform } from '../../api/platform-api'
+import { useI18n } from 'vue-i18n'
 
-interface Provider {
+const { t } = useI18n()
+
+export interface Provider {
   id: string
   name: string
   enabled: boolean
@@ -103,7 +106,7 @@ const handleToggleProvider = async (id: string, enabled: boolean) => {
 
   const platform = platformMap[id]
   if (!platform) {
-    ElMessage.error('不支持的平台类型')
+    ElMessage.error(t('settings.message.platform_unsupported'))
     return
   }
 
@@ -111,7 +114,7 @@ const handleToggleProvider = async (id: string, enabled: boolean) => {
   if (enabled) {
     const provider = props.providers.find((p) => p.id === id)
     if (provider && !provider.existApiKey) {
-      ElMessage.warning('请先配置API Key')
+      ElMessage.warning(t('settings.message.configure_api_key_first'))
       emit('update:selectedProvider', id)
       // 触发表单校验
       setTimeout(() => {
@@ -130,13 +133,13 @@ const handleToggleProvider = async (id: string, enabled: boolean) => {
     if (response.errorCode === '00000') {
       const updatedProviders = props.providers.map((p) => (p.id === id ? { ...p, enabled } : p))
       emit('update:providers', updatedProviders)
-      ElMessage.success(enabled ? '已启用' : '已禁用')
+      ElMessage.success(enabled ? t('settings.message.enabled') : t('settings.message.disabled'))
     } else {
-      ElMessage.error(response.userTip || '操作失败')
+      ElMessage.error(response.userTip || t('common.error_operation_failed'))
     }
   } catch (error) {
     console.error('切换状态失败:', error)
-    ElMessage.error('操作失败，请重试')
+    ElMessage.error(t('common.error_operation_failed_retry'))
   }
 }
 

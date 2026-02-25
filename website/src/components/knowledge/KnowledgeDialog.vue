@@ -1,43 +1,46 @@
 <template>
   <el-dialog
     :model-value="modelValue"
-    :title="editingKb ? '编辑知识库' : '创建知识库'"
+    :title="editingKb ? t('knowledge.dialog.title_edit') : t('knowledge.dialog.title_create')"
     width="500px"
     @update:model-value="emit('update:modelValue', $event)"
     @close="handleClose"
   >
     <el-form ref="formRef" :model="localForm" :rules="rules" label-width="80px">
-      <el-form-item label="名称" prop="name">
-        <el-input v-model="localForm.name" placeholder="请输入知识库名称" />
+      <el-form-item :label="t('knowledge.dialog.name_label')" prop="name">
+        <el-input v-model="localForm.name" :placeholder="t('knowledge.dialog.name_placeholder')" />
       </el-form-item>
-      <el-form-item label="描述">
+      <el-form-item :label="t('knowledge.dialog.desc_label')">
         <el-input
           v-model="localForm.description"
           type="textarea"
           :rows="4"
-          placeholder="请输入知识库描述（可选）"
+          :placeholder="t('knowledge.dialog.desc_placeholder')"
         />
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="handleClose">取消</el-button>
+      <el-button @click="handleClose">{{ t('common.cancel') }}</el-button>
       <el-button type="primary" @click="handleSave">
-        {{ editingKb ? '保存' : '创建' }}
+        {{ editingKb ? t('common.save') : t('knowledge.dialog.create') }}
       </el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, reactive } from 'vue'
+import { ref, watch, reactive, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules, FormItemRule } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import {
   checkKnowledgeName,
   addEditKnowledge,
   type KnowledgeAddEditRequest,
   type KnowledgeVO,
 } from '../../api/model'
+
+const { t } = useI18n()
 
 interface FileItem {
   id: string
@@ -95,10 +98,10 @@ const validateName = async (name: string): Promise<string | null> => {
     if (checkRes.errorCode === '00000') {
       return checkRes.data // 返回错误信息或null
     }
-    return '校验失败，请重试'
+    return t('knowledge.validation.check_failed')
   } catch (error) {
     console.error('校验名称失败:', error)
-    return '校验失败，请重试'
+    return t('knowledge.validation.check_failed')
   }
 }
 
@@ -123,16 +126,16 @@ const validateKnowledgeName: FormItemRule['validator'] = (_rule, value, callback
       }
     })
     .catch(() => {
-      callback(new Error('校验失败，请重试'))
+      callback(new Error(t('knowledge.validation.check_failed')))
     })
 }
 
-const rules: FormRules = {
+const rules = computed<FormRules>(() => ({
   name: [
-    { required: true, message: '请输入知识库名称', trigger: 'blur' },
+    { required: true, message: t('knowledge.validation.name_required'), trigger: 'blur' },
     { validator: validateKnowledgeName, trigger: 'blur' },
   ],
-}
+}))
 
 watch(
   () => props.modelValue,
@@ -166,7 +169,7 @@ const handleSave = async () => {
       try {
         const res = await addEditKnowledge(request)
         if (res.errorCode === '00000') {
-          ElMessage.success(props.editingKb ? '保存成功' : '创建成功')
+          ElMessage.success(props.editingKb ? t('knowledge.message.save_success') : t('knowledge.message.create_success'))
           emit('saved')
           handleClose()
         }

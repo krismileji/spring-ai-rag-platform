@@ -17,12 +17,12 @@ public enum UserKnowledgeFileStatusEnum implements BaseEnum<String> {
     /**
      * 未保存
      */
-    UNSAVED("UNSAVED", "未保存"),
+    UNSAVED("UNSAVED", "enum.user_knowledge_file_status.unsaved"),
 
     /**
      * 已保存
      */
-    SAVED("SAVED", "已保存");
+    SAVED("SAVED", "enum.user_knowledge_file_status.saved");
 
     /**
      * 枚举值

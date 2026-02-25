@@ -16,10 +16,10 @@
       <el-card class="login-card" :body-style="{ padding: '32px' }">
         <div class="tab-header">
           <div class="tab-item" :class="{ active: isLoginMode }" @click="isLoginMode = true">
-            登录
+            {{ t('login.title') }}
           </div>
           <div class="tab-item" :class="{ active: !isLoginMode }" @click="isLoginMode = false">
-            注册
+            {{ t('login.register') }}
           </div>
         </div>
 
@@ -35,7 +35,7 @@
           <el-form-item prop="username">
             <el-input
               v-model="loginForm.username"
-              placeholder="用户名"
+              :placeholder="t('login.placeholder.username')"
               size="large"
               :prefix-icon="User"
             />
@@ -44,7 +44,7 @@
             <el-input
               v-model="loginForm.password"
               type="password"
-              placeholder="密码"
+              :placeholder="t('login.placeholder.password')"
               size="large"
               :prefix-icon="Lock"
               show-password
@@ -59,7 +59,7 @@
               class="submit-btn"
               @click="handleLogin"
             >
-              登录
+              {{ t('login.submit') }}
             </el-button>
           </el-form-item>
         </el-form>
@@ -76,7 +76,7 @@
           <el-form-item prop="username">
             <el-input
               v-model="registerForm.username"
-              placeholder="用户名"
+              :placeholder="t('login.placeholder.username')"
               size="large"
               :prefix-icon="User"
             />
@@ -85,7 +85,7 @@
             <el-input
               v-model="registerForm.password"
               type="password"
-              placeholder="密码"
+              :placeholder="t('login.placeholder.password')"
               size="large"
               :prefix-icon="Lock"
               show-password
@@ -95,7 +95,7 @@
             <el-input
               v-model="registerForm.confirmPassword"
               type="password"
-              placeholder="确认密码"
+              :placeholder="t('login.placeholder.confirm_password')"
               size="large"
               :prefix-icon="Lock"
               show-password
@@ -110,7 +110,7 @@
               class="submit-btn"
               @click="handleRegister"
             >
-              注册
+              {{ t('login.register') }}
             </el-button>
           </el-form-item>
         </el-form>
@@ -120,7 +120,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { Lock, User } from '@element-plus/icons-vue'
 import { useAuthStore } from '../../stores/auth'
@@ -137,6 +138,7 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 
 const showDialog = ref(props.modelValue)
@@ -168,10 +170,10 @@ const loginForm = ref({
   password: '',
 })
 
-const loginRules: FormRules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
-}
+const loginRules = computed<FormRules>(() => ({
+  username: [{ required: true, message: t('login.validation.username_required'), trigger: 'blur' }],
+  password: [{ required: true, message: t('login.validation.password_required'), trigger: 'blur' }],
+}))
 
 // 注册表单
 const registerFormRef = ref<FormInstance>()
@@ -187,9 +189,9 @@ const validateConfirmPassword = (
   callback: (error?: Error) => void,
 ) => {
   if (value === '') {
-    callback(new Error('请再次输入密码'))
+    callback(new Error(t('login.validation.password_confirm_required')))
   } else if (value !== registerForm.value.password) {
-    callback(new Error('两次输入密码不一致'))
+    callback(new Error(t('login.validation.password_mismatch')))
   } else {
     callback()
   }
@@ -202,7 +204,7 @@ const validateUsername = async (
   callback: (error?: Error) => void,
 ) => {
   if (!value) {
-    callback(new Error('请输入用户名'))
+    callback(new Error(t('login.validation.username_required')))
     return
   }
 
@@ -210,29 +212,29 @@ const validateUsername = async (
     const response = await checkUsername(value)
     if (response.errorCode !== '00000') {
       // 错误已在拦截器中统一处理
-      callback(new Error(response.userTip || '校验失败'))
+      callback(new Error(response.userTip || t('login.validation.check_failed')))
     } else if (response.data) {
       // data 为 true 表示用户名已存在
-      callback(new Error('用户名已被使用'))
+      callback(new Error(t('login.validation.username_exists')))
     } else {
       callback()
     }
   } catch {
-    callback(new Error('校验用户名失败,请重试'))
+    callback(new Error(t('login.validation.check_error')))
   }
 }
 
-const registerRules: FormRules = {
+const registerRules = computed<FormRules>(() => ({
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { required: true, message: t('login.validation.username_required'), trigger: 'blur' },
     { validator: validateUsername as never, trigger: 'blur' },
   ],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' },
+    { required: true, message: t('login.validation.password_required'), trigger: 'blur' },
+    { min: 6, message: t('login.validation.password_length'), trigger: 'blur' },
   ],
   confirmPassword: [{ required: true, validator: validateConfirmPassword, trigger: 'blur' }],
-}
+}))
 
 // 处理登录
 const handleLogin = async () => {
@@ -243,7 +245,7 @@ const handleLogin = async () => {
       loading.value = true
       try {
         await authStore.login(loginForm.value.username, loginForm.value.password)
-        ElMessage.success('登录成功')
+        ElMessage.success(t('login.message.login_success'))
         showDialog.value = false
         // 重置表单
         loginForm.value = { username: '', password: '' }
@@ -267,16 +269,16 @@ const handleRegister = async () => {
         await authStore.register(registerForm.value.username, registerForm.value.password)
 
         // 注册成功，提示是否立即登录
-        ElMessageBox.confirm('注册成功！是否立即登录？', '提示', {
-          confirmButtonText: '立即登录',
-          cancelButtonText: '稍后登录',
+        ElMessageBox.confirm(t('login.message.register_success_confirm'), t('common.prompt'), {
+          confirmButtonText: t('login.action.login_now'),
+          cancelButtonText: t('login.action.login_later'),
           type: 'success',
         })
           .then(async () => {
             // 点击“立即登录”，使用注册的用户名和密码登录
             try {
               await authStore.login(registerForm.value.username, registerForm.value.password)
-              ElMessage.success('登录成功')
+              ElMessage.success(t('login.message.login_success'))
               showDialog.value = false
               // 重置表单
               registerForm.value = { username: '', password: '', confirmPassword: '' }

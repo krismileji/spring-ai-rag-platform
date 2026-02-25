@@ -1,15 +1,15 @@
 <template>
   <div class="content-section">
     <div class="section-header">
-      <h1>通用设置</h1>
-      <p class="section-desc">配置应用的通用选项</p>
+      <h1>{{ t('settings.general.title') }}</h1>
+      <p class="section-desc">{{ t('settings.general.description') }}</p>
     </div>
 
     <div class="config-form">
       <div class="form-row">
         <div class="form-col">
           <div class="form-item">
-            <label class="form-label">语言</label>
+            <label class="form-label">{{ t('settings.general.language') }}</label>
             <el-select
               :model-value="settings.language"
               size="large"
@@ -22,28 +22,31 @@
         </div>
         <div class="form-col">
           <div class="form-item">
-            <label class="form-label">主题</label>
+            <label class="form-label">{{ t('settings.general.theme') }}</label>
             <el-select
               :model-value="settings.theme"
               size="large"
               @update:model-value="updateSetting('theme', $event)"
             >
-              <el-option label="浅色" value="light" />
-              <el-option label="深色" value="dark" />
-              <el-option label="跟随系统" value="auto" />
+              <el-option :label="t('settings.general.theme_light')" value="light" />
+              <el-option :label="t('settings.general.theme_dark')" value="dark" />
+              <el-option :label="t('settings.general.theme_auto')" value="auto" />
             </el-select>
           </div>
         </div>
       </div>
 
       <div class="form-actions">
-        <el-button type="primary" size="large" @click="handleSave"> 保存设置 </el-button>
+        <el-button type="primary" size="large" @click="handleSave"> {{ t('common.save') }} </el-button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 interface GeneralSettings {
   language: string
   theme: string

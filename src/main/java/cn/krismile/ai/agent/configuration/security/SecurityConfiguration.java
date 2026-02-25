@@ -3,6 +3,7 @@ package cn.krismile.ai.agent.configuration.security;
 import cn.krismile.ai.agent.configuration.security.filter.AuthenticationWebFilter;
 import cn.krismile.ai.agent.configuration.security.handler.CustomServerAccessDeniedHandler;
 import cn.krismile.ai.agent.configuration.security.handler.CustomServerAuthenticationEntryPoint;
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
@@ -28,8 +29,8 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    public CustomServerAuthenticationEntryPoint customServerAuthenticationEntryPoint() {
-        return new CustomServerAuthenticationEntryPoint();
+    public CustomServerAuthenticationEntryPoint customServerAuthenticationEntryPoint(MessageSource messageSource) {
+        return new CustomServerAuthenticationEntryPoint(messageSource);
     }
 
     @Bean

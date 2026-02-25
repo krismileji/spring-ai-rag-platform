@@ -8,13 +8,13 @@
       <div class="header-actions">
         <el-input
           :model-value="searchQuery"
-          placeholder="搜索文件..."
+          :placeholder="t('knowledge.detail.search_placeholder')"
           :prefix-icon="Search"
           clearable
           style="width: 300px"
           @update:model-value="$emit('update:searchQuery', $event)"
         />
-        <el-button type="primary" :icon="Upload" @click="handleUploadFile"> 上传文件 </el-button>
+        <el-button type="primary" :icon="Upload" @click="handleUploadFile"> {{ t('knowledge.detail.upload_file') }} </el-button>
       </div>
     </div>
 
@@ -44,6 +44,9 @@ import FileList from './FileList.vue'
 import FileUpload from './FileUpload.vue'
 import { getKnowledgeFileList, deleteKnowledgeFile } from '@/api/knowledge-api'
 import type { KnowledgeFileVO } from '@/api/model'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface FileItem {
   id: string
@@ -92,9 +95,9 @@ const loadFileList = async () => {
   } catch (error) {
     console.error('加载文件列表失败:', error)
     if (error && typeof error === 'object' && 'userTip' in error) {
-      ElMessage.error((error as { userTip: string }).userTip || '加载文件列表失败')
+      ElMessage.error((error as { userTip: string }).userTip || t('knowledge.message.load_files_error'))
     } else {
-      ElMessage.error('加载文件列表失败')
+      ElMessage.error(t('knowledge.message.load_files_error'))
     }
   }
 }

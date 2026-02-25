@@ -1,24 +1,30 @@
 <template>
   <div class="content-section">
     <div class="section-header">
-      <h1>关于</h1>
+      <h1>{{ t('settings.about.title') }}</h1>
     </div>
     <div class="about-content">
       <div class="about-item">
-        <span class="about-label">版本</span>
+        <span class="about-label">{{ t('settings.about.version') }}</span>
         <span class="about-value">1.0.0</span>
       </div>
       <div class="about-item">
-        <span class="about-label">更新时间</span>
+        <span class="about-label">{{ t('settings.about.update_time') }}</span>
         <span class="about-value">2026-01-13</span>
       </div>
       <div class="about-item">
-        <span class="about-label">描述</span>
-        <span class="about-value">AI Agent Web - 智能对话助手</span>
+        <span class="about-label">{{ t('settings.about.description') }}</span>
+        <span class="about-value">{{ t('settings.about.app_description') }}</span>
       </div>
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+</script>
 
 <style scoped>
 .content-section {

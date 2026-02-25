@@ -5,7 +5,7 @@
         <el-icon class="el-icon--left">
           <Plus />
         </el-icon>
-        新建对话
+        {{ t('chat.session.new') }}
       </el-button>
     </div>
 
@@ -21,7 +21,7 @@
 
     <div v-if="!isCollapsed" class="session-search">
       <div class="search-wrapper">
-        <el-input v-model="searchText" placeholder="搜索对话..." :prefix-icon="Search" clearable />
+        <el-input v-model="searchText" :placeholder="t('chat.session.search_placeholder')" :prefix-icon="Search" clearable />
       </div>
     </div>
 
@@ -31,14 +31,14 @@
         <el-icon class="is-loading" :size="32">
           <Loading />
         </el-icon>
-        <div class="loading-text">加载中...</div>
+        <div class="loading-text">{{ t('common.loading') }}</div>
       </div>
 
       <!-- 空状态 -->
       <div v-else-if="filteredSessions.length === 0" class="empty-state">
         <div class="empty-icon">📝</div>
-        <div class="empty-text">暂无会话</div>
-        <div class="empty-hint">点击上方按钮创建新对话</div>
+        <div class="empty-text">{{ t('chat.session.empty_title') }}</div>
+        <div class="empty-hint">{{ t('chat.session.empty_hint') }}</div>
       </div>
 
       <!-- 会话列表 -->
@@ -46,7 +46,7 @@
         :class="{ active: session.id === chatStore.currentSessionId }" @click="handleSelectSession(session.id)">
         <div class="session-content">
           <div class="session-title">{{ session.title }}</div>
-          <div class="session-preview">{{ session.lastMessage || '暂无消息' }}</div>
+          <div class="session-preview">{{ session.lastMessage || t('chat.session.no_message') }}</div>
         </div>
         <div class="session-actions">
           <el-icon class="action-icon" @click.stop="handleDeleteSession(session.id)">
@@ -64,7 +64,9 @@ import { ref, computed } from 'vue'
 import { Plus, Search, Delete, Loading, ArrowRight, ArrowLeft } from '@element-plus/icons-vue'
 import { useChatStore } from '../../stores/chat'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const chatStore = useChatStore()
 const searchText = ref('')
 const isCollapsed = ref(false)
@@ -82,7 +84,7 @@ const filteredSessions = computed(() => {
 
 const handleNewSession = () => {
   chatStore.createSession()
-  ElMessage.success('新对话创建成功')
+  ElMessage.success(t('chat.session.message.create_success'))
 }
 
 const handleSelectSession = (sessionId: string) => {
@@ -91,7 +93,7 @@ const handleSelectSession = (sessionId: string) => {
 
 const handleDeleteSession = async (sessionId: string) => {
   await chatStore.deleteSession(sessionId)
-  ElMessage.success('对话已删除')
+  ElMessage.success(t('chat.session.message.delete_success'))
 }
 
 const formatTime = (timestamp?: number) => {

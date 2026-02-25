@@ -2,8 +2,8 @@
   <div class="kb-sidebar">
     <div class="kb-header">
       <div class="kb-title">
-        <h2>知识库</h2>
-        <p class="kb-subtitle">管理你的工作、学习与生活知识</p>
+        <h2>{{ t('knowledge.sidebar.title') }}</h2>
+        <p class="kb-subtitle">{{ t('knowledge.sidebar.subtitle') }}</p>
       </div>
     </div>
 
@@ -15,13 +15,13 @@
           @click="$emit('view-change', 'home')"
         >
           <el-icon><HomeFilled /></el-icon>
-          <span>首页</span>
+          <span>{{ t('knowledge.sidebar.home') }}</span>
         </div>
       </div>
 
       <div class="nav-section">
         <div class="section-header">
-          <span>知识库</span>
+          <span>{{ t('knowledge.sidebar.title') }}</span>
           <el-button
             text
             :icon="Plus"
@@ -46,13 +46,13 @@
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item :command="{ action: 'edit', id: kb.id }">
-                    编辑
+                    {{ t('common.edit') }}
                   </el-dropdown-item>
                   <el-dropdown-item
                     :command="{ action: 'delete', id: kb.id }"
                     divided
                   >
-                    删除
+                    {{ t('common.delete') }}
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -70,6 +70,9 @@ import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { HomeFilled, Plus, Folder, MoreFilled } from '@element-plus/icons-vue'
 import { getKnowledgeList, deleteKnowledge, type KnowledgeVO } from '../../api/model'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface FileItem {
   id: string
@@ -105,6 +108,12 @@ const knowledgeBases = ref<KnowledgeBase[]>([])
 
 // 加载知识库列表
 const loadKnowledgeBases = async () => {
+  // 检查是否已登录，未登录不调用接口
+  const token = localStorage.getItem('token')
+  if (!token) {
+    return
+  }
+
   try {
     const res = await getKnowledgeList()
     if (res.errorCode === '00000' && res.data) {
@@ -113,7 +122,7 @@ const loadKnowledgeBases = async () => {
         name: kb.name,
         description: kb.description || '',
         files: [],
-        createTime: new Date().toLocaleString('zh-CN'),
+        createTime: new Date().toLocaleString(),
       }))
       emit('update-list', knowledgeBases.value)
     }
@@ -131,18 +140,18 @@ const handleKbAction = async (command: { action: string; id: string }) => {
     emit('edit-kb', kb)
   } else if (command.action === 'delete') {
     try {
-      await ElMessageBox.confirm('确定要删除该知识库吗？这将同时删除知识库下所有的文件。', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+      await ElMessageBox.confirm(t('knowledge.message.delete_confirm'), t('common.prompt'), {
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
         type: 'warning',
       })
       const res = await deleteKnowledge(command.id)
       if (res.errorCode === '00000' && res.data) {
         emit('delete-kb', command.id)
         await loadKnowledgeBases()
-        ElMessage.success('删除成功')
+        ElMessage.success(t('knowledge.message.delete_success'))
       } else {
-        ElMessage.error(res.errorMessage || '删除失败')
+        ElMessage.error(res.errorMessage || t('knowledge.message.delete_error'))
       }
     } catch (e) {
       if (e !== 'cancel') {
