@@ -335,6 +335,12 @@ public class PlatformChatOptions implements ToolCallingChatOptions {
             PropertyDescriptorUtils.copyPropertiesIgnoreNull(this.options, deepSeekOptions);
             PropertyDescriptorUtils.copyPropertiesIgnoreNull(this.options, ollamaOptions);
 
+            // FIX: 解决 DashScopeChatOptions 中的 multiModel 字段默认值为 false，导致 defaultOptions 中的默认值永远无法覆盖
+            // 当 multiModel 为 true 时，会调用 DashScopeApiConstants.MULTIMODAL_GENERATION_RESTFUL_URL
+            // 当 multiModel 为 false 时，会调用 DashScopeApiConstants.TEXT_GENERATION_RESTFUL_URL
+            // 参考文档：https://bailian.console.aliyun.com/cn-beijing?tab=api#/api/?type=model&url=3016809
+            dashScopeOptions.setMultiModel(null);
+
             if (this.options.enableSearch != null) {
                 dashScopeOptions.setEnableSearch(this.options.enableSearch);
             }
