@@ -43,6 +43,18 @@ graph LR
 
 > ⚠️ **注意**：`/chat/message` 虽然无需登录，但生产环境建议限制访问。
 
+### 第三步：设置语言偏好
+
+系统支持国际化，可通过 HTTP 请求头指定语言：
+
+```http
+Accept-Language: zh-CN
+# 或
+Accept-Language: en-US
+```
+
+前端会自动根据用户设置添加此请求头。后端会根据此头部返回对应语言的错误消息和枚举描述。
+
 ## 三大核心功能模块
 
 ### 👤 模块一：用户认证
@@ -340,3 +352,103 @@ curl -X POST "http://localhost:10001/chat/message" \
 ```
 
 > 更多接口定义、枚举类型与字段说明，请以 `http://localhost:10001/doc.html` 中自动生成的在线文档为准。
+
+## 5. AI 工具调用 (Tool Calling)
+
+### 5.1 网页访问工具 (WebVisitTool)
+
+系统内置了 `visit_web` 工具，AI 可在对话过程中自主调用该工具访问网页获取实时信息。
+
+**工具定义**：
+
+| 属性 | 值 |
+|------|------|
+| 名称 | `visit_web` |
+| 描述 | visit a website |
+| 参数 | `url` - the url of the website |
+
+**返回格式**：
+
+```text
+title: 网页标题
+description: 网页描述
+body: 网页正文内容...
+```
+
+**使用场景**：
+
+- 用户询问实时新闻或最新信息
+- 需要访问特定网页获取详细内容
+- AI 知识库中没有的实时数据
+
+**错误处理**：
+
+| 错误码 | 说明 |
+|--------|------|
+| `INVALID_URL` | URL 不合法 |
+| `RATE_LIMIT` | 访问频率过高 |
+| `HTTP_ERROR` | HTTP 请求错误 |
+| `TIMEOUT` | 请求超时 |
+| `PARSE_ERROR` | 内容解析失败 |
+| `FETCH_ERROR` | 访问失败 |
+
+### 5.2 如何启用工具调用
+
+在聊天请求中，工具默认已注册到聊天模型。AI 会根据用户问题自主决定是否调用工具：
+
+```json
+{
+  "platform": "ALIYUN",
+  "model": "qwen-plus",
+  "conversationId": "xxx",
+  "message": "帮我查看今天的科技新闻",
+  "knowledgeType": null
+}
+```
+
+AI 会自动判断是否需要访问网页，并调用 `visit_web` 工具获取信息。
+
+## 6. 国际化支持
+
+### 6.1 支持的语言
+
+| 语言代码 | 语言名称 |
+|----------|----------|
+| `zh-CN` | 简体中文（默认） |
+| `en-US` | English |
+
+### 6.2 后端国际化
+
+后端通过 `Accept-Language` 请求头识别语言，返回对应语言的：
+
+- 错误消息（`userTip` 字段）
+- 枚举描述（如平台名称、模型类型等）
+
+**示例**：
+
+```http
+GET /platform/chat/list
+Accept-Language: en-US
+```
+
+返回：
+```json
+{
+  "errorCode": "00000",
+  "data": [
+    {
+      "platform": "ALIYUN",
+      "platformName": "Aliyun",
+      ...
+    }
+  ]
+}
+```
+
+### 6.3 前端国际化
+
+前端使用 Vue I18n 实现：
+
+- 自动检测浏览器语言
+- 用户可在设置页面切换语言
+- 语言设置保存在 `localStorage`

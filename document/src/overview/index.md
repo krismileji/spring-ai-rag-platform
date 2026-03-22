@@ -11,8 +11,10 @@ outline: deep
 ### 核心特点
 
 - **响应式全栈架构**: 后端采用 WebFlux + R2DBC 实现全异步非阻塞 I/O，前端基于 Vue 3 Composition API
-- **多模型接入**: 通过策略模式支持 Ollama、DeepSeek、通义千问等多平台 AI 模型
+- **多模型接入**: 通过策略模式支持 Ollama、DeepSeek、通义千问等多平台 AI 模型，支持多模态与纯文本两种调用方式
 - **RAG 知识增强**: 集成 Qdrant 向量数据库，实现语义检索与上下文增强
+- **网页访问工具**: 内置 WebVisitTool，支持 AI 自动访问网页、抓取内容并解析提取关键信息
+- **国际化支持**: 前后端完整的国际化支持，支持中文/英文双语切换，自动适配浏览器语言
 - **流式对话体验**: SSE（Server-Sent Events）实现打字机效果的实时对话
 - **JWT 无状态认证**: 基于 Spring Security + JWT 实现安全的 RESTful API
 
@@ -49,6 +51,7 @@ src/main/java/cn/krismile/ai/agent/
 │   ├── database/          # 数据库配置（R2DBC、Jackson 转换器）
 │   ├── security/          # 安全配置（JWT Filter、异常处理器）
 │   ├── doc/               # API 文档配置
+│   ├── I18nConfiguration  # 国际化配置（MessageSource、LocaleResolver）
 │   └── ChatConfiguration  # AI 聊天配置（文件存储等）
 ├── controller/            # 控制器层（RESTful API）
 │   ├── chat/              # 聊天相关：ChatController、ChatMemoryController
@@ -74,6 +77,8 @@ src/main/java/cn/krismile/ai/agent/
 │   └── rag/               # RAG 检索增强
 │       ├── embedding/       # 向量化：VectorStoreBuilder、QdrantVectorStoreBuilder
 │       └── file/            # 文件解析：FileParser、FileService
+├── exception/tool/         # 工具异常定义
+│   └── WebVisitException   # 网页访问异常
 └── util/                  # 工具类：加密、JSON处理、雪花ID生成器
 ```
 
@@ -86,6 +91,10 @@ src/main/java/cn/krismile/ai/agent/
 3. **响应式编程**: 所有 Service 层返回 `Mono<T>` 或 `Flux<T>`，Repository 使用 `ReactiveCrudRepository`，实现端到端的非阻塞异步处理。
 
 4. **安全过滤链**：`AuthenticationWebFilter` 在请求到达 Controller 前拦截，解析 JWT Token 并注入到 `ReactiveSecurityContext` 中，后续通过 `SecurityUtils.getCurrentUserId()` 获取当前用户 ID。
+
+5. **国际化架构**：`I18nConfiguration` 配置 `MessageSource` 和 `LocaleContextResolver`，前端通过 `Accept-Language` 请求头传递语言设置，后端根据请求头自动切换消息语言。
+
+6. **AI 工具调用**：`WebVisitTool` 作为 Spring AI Tool 注册到聊天模型中，AI 可自主决定是否调用该工具访问网页获取实时信息。
 
 ### 2.3 核心设计模式
 
@@ -266,3 +275,158 @@ interface VO<T> {
 - 其他错误码展示 `userTip` 提示用户
 
 > 更详细的字段说明和接口入参/出参，请参考接口文档 `http://localhost:10001/doc.html`。
+
+## 4. 网页访问工具 (WebVisitTool)
+
+### 4.1 功能概述
+
+`WebVisitTool` 是一个注册到 Spring AI 的工具（Tool），允许 AI 在对话过程中自主访问网页、抓取内容并解析提取关键信息。这使得 AI 能够获取实时网络信息，扩展其知识边界。
+
+### 4.2 核心特性
+
+- **自动解析 HTML**：使用 Jsoup 解析 HTML，提取标题、描述、正文段落
+- **智能内容提取**：自动移除脚本、样式等无关元素，保留核心内容
+- **限流保护**：使用 Resilience4j RateLimiter 限制访问频率，防止滥用
+- **重试机制**：支持超时和服务器错误自动重试
+- **指标监控**：集成 Micrometer 记录访问成功/失败指标
+
+### 4.3 工作流程
+
+```mermaid
+graph LR
+    A[AI 决定访问网页] --> B[调用 visit_web 工具]
+    B --> C[URL 合法性校验]
+    C --> D[限流检查]
+    D --> E[HTTP 请求获取 HTML]
+    E --> F[Jsoup 解析内容]
+    F --> G[提取标题/描述/段落]
+    G --> H[返回格式化内容]
+```
+
+### 4.4 使用示例
+
+当用户询问需要实时信息的问题时，AI 会自动调用该工具：
+
+```
+用户：帮我查看 Spring AI 最新版本的发布说明
+
+AI：我来访问 Spring AI 的官方文档获取最新信息...
+[调用 visit_web 工具访问 https://docs.spring.io/spring-ai/reference/]
+
+AI：根据官方文档，Spring AI 最新版本是 1.1.2...
+```
+
+## 5. 国际化架构 (i18n)
+
+### 5.1 架构设计
+
+项目采用前后端分离的国际化方案：
+
+```mermaid
+graph TB
+    subgraph 前端
+        A[Vue I18n] --> B[zh-CN.ts]
+        A --> C[en-US.ts]
+        D[浏览器语言检测] --> A
+        E[localStorage 缓存] --> A
+    end
+    subgraph 后端
+        F[MessageSource] --> G[messages_zh_CN.properties]
+        F --> H[messages_en_US.properties]
+        I[Accept-Language 请求头] --> J[LocaleContextResolver]
+        J --> F
+    end
+    A -- HTTP 请求头 --> I
+```
+
+### 5.2 后端国际化配置
+
+```java
+// I18nConfiguration.java
+@Bean
+public MessageSource messageSource() {
+    ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
+    messageSource.setBasename("i18n/messages");
+    messageSource.setDefaultEncoding(StandardCharsets.UTF_8.name());
+    return messageSource;
+}
+
+@Bean
+public LocaleContextResolver localeContextResolver() {
+    AcceptHeaderLocaleContextResolver resolver = new AcceptHeaderLocaleContextResolver();
+    resolver.setSupportedLocales(Arrays.asList(Locale.CHINA, Locale.US));
+    resolver.setDefaultLocale(Locale.CHINA);
+    return resolver;
+}
+```
+
+### 5.3 前端国际化配置
+
+```typescript
+// website/src/i18n/index.ts
+const getLocale = () => {
+  const saved = localStorage.getItem('app_locale')
+  if (saved) return saved
+
+  const language = navigator.language
+  if (language.indexOf('zh') > -1) {
+    return 'zh-CN'
+  }
+  return 'en-US'
+}
+
+const i18n = createI18n({
+  legacy: false, // 使用 Composition API 模式
+  locale: getLocale(),
+  fallbackLocale: 'zh-CN',
+  messages: {
+    'zh-CN': zhCN,
+    'en-US': enUS,
+  },
+})
+```
+
+### 5.4 语言切换
+
+前端在请求拦截器中自动添加 `Accept-Language` 请求头：
+
+```typescript
+// website/src/api/api-client.ts
+apiClient.interceptors.request.use((config) => {
+  // ... 其他处理
+  config.headers['Accept-Language'] = i18n.global.locale.value
+  return config
+})
+```
+
+用户可在设置页面或侧边栏切换语言，语言设置会保存到 `localStorage`。
+
+## 6. 多模态模型支持
+
+### 6.1 概述
+
+项目支持阿里云 DashScope 的多模态模型调用。通过 `multiModel` 参数控制调用方式：
+
+- **多模态模式 (multiModel=true)**：调用 `MULTIMODAL_GENERATION_RESTFUL_URL`，支持图片、文本混合输入
+- **纯文本模式 (multiModel=false)**：调用 `TEXT_GENERATION_RESTFUL_URL`，仅支持文本输入
+
+### 6.2 配置方式
+
+在 `PlatformChatOptions` 中，系统会根据模型的 `requestModalities` 自动设置 `multiModel` 参数：
+
+```java
+// PlatformChatOptions.java
+if (this.options.metaData != null) {
+    dashScopeOptions.setMultiModel(Optional.ofNullable(this.options.metaData.getRequestModalities())
+            .map(modalities -> modalities.size() > 1)
+            .orElse(null));
+}
+```
+
+### 6.3 使用场景
+
+| 场景 | multiModel 值 | 说明 |
+|------|--------------|------|
+| 纯文本对话 | false/null | 使用文本生成接口，响应更快 |
+| 图片理解 | true | 使用多模态接口，支持图片输入 |
+| 文档解析 | true | 支持图片+文本混合内容 |

@@ -123,7 +123,62 @@ project:
   - Windows 环境可直接使用默认路径；
   - Linux / macOS 环境应修改为合适的目录（例如 `/data/ai-rag/upload`），并确保运行账号有读写权限。
 
-## 5. 示例：最小可运行环境
+## 5. 国际化配置
+
+### 5.1 后端国际化
+
+后端国际化配置位于 `I18nConfiguration.java`：
+
+```java
+@Configuration
+public class I18nConfiguration {
+
+    /**
+     * 支持的语言列表
+     */
+    public static final List<Locale> SUPPORTED_LOCALES = Arrays.asList(Locale.CHINA, Locale.US);
+
+    /**
+     * 默认语言
+     */
+    public static final Locale DEFAULT_LOCALE = Locale.CHINA;
+}
+```
+
+语言资源文件位于 `src/main/resources/i18n/` 目录：
+
+```
+src/main/resources/i18n/
+├── messages.properties        # 默认资源文件
+├── messages_zh_CN.properties  # 简体中文
+└── messages_en_US.properties  # 英文
+```
+
+### 5.2 前端国际化
+
+前端使用 Vue I18n，语言文件位于 `website/src/i18n/locales/`：
+
+```
+website/src/i18n/
+├── index.ts           # i18n 配置入口
+└── locales/
+    ├── zh-CN.ts       # 简体中文
+    └── en-US.ts       # 英文
+```
+
+### 5.3 添加新的语言支持
+
+**后端步骤**：
+
+1. 在 `src/main/resources/i18n/` 创建新的资源文件，如 `messages_ja_JP.properties`
+2. 在 `I18nConfiguration.SUPPORTED_LOCALES` 中添加 `Locale.JAPAN`
+
+**前端步骤**：
+
+1. 在 `website/src/i18n/locales/` 创建新的语言文件，如 `ja-JP.ts`
+2. 在 `website/src/i18n/index.ts` 中导入并注册新语言
+
+## 6. 示例：最小可运行环境
 
 1. 安装并启动 MySQL、Redis、Qdrant；
 2. 配置数据库连接（R2DBC）、Redis、Qdrant 以及 JWT/会话签名；
@@ -136,9 +191,9 @@ project:
 
 5. 浏览器访问 `http://localhost:10001/doc.html` 查看在线接口文档，或访问首页应用。
 
-## 6. 生产环境部署建议
+## 7. 生产环境部署建议
 
-### 6.1 Docker Compose 部署（推荐）
+### 7.1 Docker Compose 部署（推荐）
 
 使用 Docker Compose 可以一键启动所有依赖服务：
 
@@ -174,7 +229,7 @@ volumes:
   qdrant_data:
 ```
 
-### 6.2 Nginx 反向代理配置
+### 7.2 Nginx 反向代理配置
 
 生产环境建议使用 Nginx 统一前后端：
 
@@ -207,7 +262,7 @@ server {
 }
 ```
 
-### 6.3 生产环境优化
+### 7.3 生产环境优化
 
 1. **数据库连接池**：
    ```yaml
